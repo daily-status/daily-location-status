@@ -57,6 +57,21 @@ Config & docs:
 - npm
 - PowerShell (`powershell.exe` / `powershell` / `pwsh` must be in `PATH`)
 
+## Windows Automated Install (non-technical)
+
+For an all-in-one Windows setup that installs prerequisites, clones the `dev` branch, writes `.env`, starts the DB container, installs dependencies, and launches backend/frontend:
+
+1. Open **PowerShell as Administrator**.
+2. Edit the `$EnvFileContent` block near the top of `scripts/windows/install_system.ps1` with your real `.env` values.
+3. Run:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+.\scripts\windows\install_system.ps1 -InstallDir "C:\daily-location-status"
+```
+
+The script uses winget to install Docker Desktop, Node.js LTS, and Git if they are missing, then runs `docker compose up -d db`, backend `npm` tasks, frontend install, and finally opens two windows running the backend and frontend.
+
 ## Local Development
 
 ### 1) Configure
