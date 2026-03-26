@@ -238,7 +238,10 @@ function Run-NpmStep {
 
     foreach ($cmd in $Commands) {
         Write-Host "Running 'npm $cmd' in $WorkingDirectory ..."
-        $npmProcess = Start-Process -FilePath "npm" -ArgumentList $cmd -WorkingDirectory $WorkingDirectory -NoNewWindow -Wait -PassThru
+        $arguments = @()
+        $arguments += $cmd
+
+        $npmProcess = Start-Process -FilePath "npm" -ArgumentList $arguments -WorkingDirectory $WorkingDirectory -NoNewWindow -Wait -PassThru
         if (-not $npmProcess -or $npmProcess.ExitCode -ne 0) {
             throw "npm $cmd failed with exit code $($npmProcess.ExitCode)."
         }
@@ -286,7 +289,8 @@ $resolvedInstallDir = if ($InstallDir) {
     if ($repoFromScript) {
         $repoFromScript
     } else {
-        [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\\.."))
+        $parent = Split-Path -Parent (Split-Path -Parent (Get-Item $PSScriptRoot).FullName)
+        [System.IO.Path]::GetFullPath($parent)
     }
 } else {
     [System.IO.Path]::GetFullPath((Join-Path $HOME "daily-location-status"))
@@ -317,8 +321,8 @@ Write-Header "Step 7/8 - Starting database container"
 Invoke-DockerComposeDb -RepoPath $repoPath
 
 Write-Header "Step 8/8 - Installing dependencies and starting apps"
-Run-NpmStep -WorkingDirectory $backendDir -Commands @("install", @("run","build:db"), @("run","update:db"))
-Run-NpmStep -WorkingDirectory $frontendDir -Commands @("install")
+Run-NpmStep -WorkingDirectory $backendDir -Commands @(@("install"), @("run","build:db"), @("run","update:db"))
+Run-NpmStep -WorkingDirectory $frontendDir -Commands @(@("install"))
 Launch-AppProcesses -BackendDir $backendDir -FrontendDir $frontendDir
 
 Write-Host ""

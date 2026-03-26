@@ -63,6 +63,8 @@ For an all-in-one Windows setup that installs prerequisites, clones the `dev` br
 
 1. Open **PowerShell as Administrator**.
 2. If you don't already have the repository, download `scripts/windows/install_system.ps1` to an empty folder (or copy it from a previous clone).
+   - Example download:  
+     `Invoke-WebRequest -Uri "https://raw.githubusercontent.com/daily-status/daily-location-status/dev/scripts/windows/install_system.ps1" -OutFile install_system.ps1`
 3. Edit the `$EnvFileContent` block near the top of `scripts/windows/install_system.ps1` with your real `.env` values.
 4. Run:
 
