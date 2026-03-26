@@ -142,10 +142,10 @@ function Ensure-Repository {
     Push-Location $RepoPath
     Write-Host "Switching to branch '$Branch'..."
     git fetch origin --prune
-    git rev-parse --verify $Branch 2>&1 | Out-Null
+    git rev-parse --verify --quiet $Branch
 
     if ($LASTEXITCODE -ne 0) {
-        git ls-remote --exit-code --heads origin $Branch 2>&1 | Out-Null
+        git ls-remote --exit-code --heads origin $Branch
         if ($LASTEXITCODE -ne 0) {
             throw "Branch '$Branch' was not found on origin."
         }
@@ -219,7 +219,10 @@ function Run-NpmStep {
     foreach ($cmd in $Commands) {
         Write-Host "Running 'npm $cmd' in $WorkingDirectory ..."
         $parts = $cmd -split "\s+"
-        & npm @parts
+        $npmProcess = Start-Process -FilePath "npm" -ArgumentList $parts -WorkingDirectory $WorkingDirectory -NoNewWindow -Wait -PassThru
+        if (-not $npmProcess -or $npmProcess.ExitCode -ne 0) {
+            throw "npm $cmd failed with exit code $($npmProcess.ExitCode)."
+        }
     }
     Pop-Location
 }
@@ -235,6 +238,8 @@ function Launch-AppProcesses {
         $backendProcess = Start-Process -FilePath "npm" -ArgumentList "run","dev" -WorkingDirectory $BackendDir -WindowStyle Normal -PassThru
         if (-not $backendProcess) {
             Write-Warning "Backend process did not start."
+        } else {
+            Write-Host "Backend running (PID $($backendProcess.Id))."
         }
     } else {
         Write-Warning "Backend directory not found. Cannot start backend process."
@@ -245,6 +250,8 @@ function Launch-AppProcesses {
         $frontendProcess = Start-Process -FilePath "npm" -ArgumentList "run","dev" -WorkingDirectory $FrontendDir -WindowStyle Normal -PassThru
         if (-not $frontendProcess) {
             Write-Warning "Frontend process did not start."
+        } else {
+            Write-Host "Frontend running (PID $($frontendProcess.Id))."
         }
     } else {
         Write-Warning "Frontend directory not found. Cannot start frontend process."

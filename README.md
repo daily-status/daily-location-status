@@ -62,8 +62,9 @@ Config & docs:
 For an all-in-one Windows setup that installs prerequisites, clones the `dev` branch, writes `.env`, starts the DB container, installs dependencies, and launches backend/frontend:
 
 1. Open **PowerShell as Administrator**.
-2. Edit the `$EnvFileContent` block near the top of `scripts/windows/install_system.ps1` with your real `.env` values.
-3. Run:
+2. If you don't already have the repository, download `scripts/windows/install_system.ps1` to an empty folder (or copy it from a previous clone).
+3. Edit the `$EnvFileContent` block near the top of `scripts/windows/install_system.ps1` with your real `.env` values.
+4. Run:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
