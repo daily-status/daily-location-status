@@ -62,7 +62,7 @@ Config & docs:
 For an all-in-one Windows setup that installs prerequisites, clones the `dev` branch, writes `.env`, starts the DB container, installs dependencies, and launches backend/frontend:
 
 1. Open **PowerShell as Administrator**.
-2. If you don't already have the repository, download `scripts/windows/install_system.ps1` to an empty folder (or copy it from a previous clone).
+2. If you don't already have the repository, download `scripts/windows/install_system.ps1` to an empty folder (or copy it from a previous clone), then edit it before running.
    - Example download:  
      `Invoke-WebRequest -Uri "https://raw.githubusercontent.com/daily-status/daily-location-status/dev/scripts/windows/install_system.ps1" -OutFile install_system.ps1`
 3. Edit the `$EnvFileContent` block near the top of `scripts/windows/install_system.ps1` with your real `.env` values.
@@ -70,7 +70,7 @@ For an all-in-one Windows setup that installs prerequisites, clones the `dev` br
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-.\scripts\windows\install_system.ps1 -InstallDir "C:\daily-location-status"
+.\install_system.ps1 -InstallDir "C:\daily-location-status"
 ```
 
 The script uses winget to install Docker Desktop, Node.js LTS, and Git if they are missing, then runs `docker compose up -d db`, backend `npm` tasks, frontend install, and finally opens two windows running the backend and frontend.

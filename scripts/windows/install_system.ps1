@@ -159,7 +159,7 @@ function Ensure-Repository {
     Push-Location $RepoPath
     Write-Host "Switching to branch '$Branch'..."
     git fetch origin --prune
-    git rev-parse --verify --quiet $Branch
+    git rev-parse --verify --quiet $Branch | Out-Null
 
     if ($LASTEXITCODE -ne 0) {
         git ls-remote --exit-code --heads origin $Branch | Out-Null
@@ -238,8 +238,7 @@ function Run-NpmStep {
 
     foreach ($cmd in $Commands) {
         Write-Host "Running 'npm $cmd' in $WorkingDirectory ..."
-        $arguments = @()
-        $arguments += $cmd
+        $arguments = @($cmd)
 
         $npmProcess = Start-Process -FilePath "npm" -ArgumentList $arguments -WorkingDirectory $WorkingDirectory -NoNewWindow -Wait -PassThru
         if (-not $npmProcess -or $npmProcess.ExitCode -ne 0) {
@@ -289,8 +288,7 @@ $resolvedInstallDir = if ($InstallDir) {
     if ($repoFromScript) {
         $repoFromScript
     } else {
-        $parent = Split-Path -Parent (Split-Path -Parent (Get-Item $PSScriptRoot).FullName)
-        [System.IO.Path]::GetFullPath($parent)
+        [System.IO.Path]::GetFullPath($PSScriptRoot)
     }
 } else {
     [System.IO.Path]::GetFullPath((Join-Path $HOME "daily-location-status"))
