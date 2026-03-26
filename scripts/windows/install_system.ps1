@@ -159,7 +159,7 @@ function Ensure-Repository {
     Push-Location $RepoPath
     Write-Host "Switching to branch '$Branch'..."
     git fetch origin --prune
-    git rev-parse --verify --quiet $Branch | Out-Null
+    git rev-parse --verify --quiet $Branch
 
     if ($LASTEXITCODE -ne 0) {
         git ls-remote --exit-code --heads origin $Branch | Out-Null
@@ -236,17 +236,13 @@ function Run-NpmStep {
         return
     }
 
-    Push-Location $WorkingDirectory
     foreach ($cmd in $Commands) {
         Write-Host "Running 'npm $cmd' in $WorkingDirectory ..."
-        $parts = @($cmd)
-
-        $npmProcess = Start-Process -FilePath "npm" -ArgumentList $parts -WorkingDirectory $WorkingDirectory -NoNewWindow -Wait -PassThru
+        $npmProcess = Start-Process -FilePath "npm" -ArgumentList $cmd -WorkingDirectory $WorkingDirectory -NoNewWindow -Wait -PassThru
         if (-not $npmProcess -or $npmProcess.ExitCode -ne 0) {
             throw "npm $cmd failed with exit code $($npmProcess.ExitCode)."
         }
     }
-    Pop-Location
 }
 
 function Launch-AppProcesses {
@@ -321,8 +317,8 @@ Write-Header "Step 7/8 - Starting database container"
 Invoke-DockerComposeDb -RepoPath $repoPath
 
 Write-Header "Step 8/8 - Installing dependencies and starting apps"
-Run-NpmStep -WorkingDirectory $backendDir -Commands @(@("install"), @("run","build:db"), @("run","update:db"))
-Run-NpmStep -WorkingDirectory $frontendDir -Commands @(@("install"))
+Run-NpmStep -WorkingDirectory $backendDir -Commands @("install", @("run","build:db"), @("run","update:db"))
+Run-NpmStep -WorkingDirectory $frontendDir -Commands @("install")
 Launch-AppProcesses -BackendDir $backendDir -FrontendDir $frontendDir
 
 Write-Host ""
