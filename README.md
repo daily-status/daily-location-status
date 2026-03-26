@@ -73,6 +73,8 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 
 The script uses winget to install Docker Desktop, Node.js LTS, and Git if they are missing, then runs `docker compose up -d db`, backend `npm` tasks, frontend install, and finally opens two windows running the backend and frontend.
 
+Values to edit in `$EnvFileContent`: `DATABASE_URL`, `VITE_API_BASE_URL`, `PORT`, and any other project-specific secrets. `JWT_SECRET` is generated automatically at runtime.
+
 ## Local Development
 
 ### 1) Configure

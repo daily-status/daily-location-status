@@ -67,6 +67,23 @@ function Write-Header {
     Write-Host "=== $Message ===" -ForegroundColor Cyan
 }
 
+function Get-RepoRoot {
+    param([string]$StartPath)
+
+    $current = [System.IO.Path]::GetFullPath($StartPath)
+    while ($true) {
+        if (Test-Path (Join-Path $current ".git")) {
+            return $current
+        }
+
+        $parent = Split-Path $current -Parent
+        if (-not $parent -or $parent -eq $current) {
+            return $null
+        }
+        $current = $parent
+    }
+}
+
 function Ensure-Winget {
     if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
         throw "winget is required to install prerequisites. Please install winget or install Docker Desktop, Node.js, and Git manually."
@@ -142,10 +159,10 @@ function Ensure-Repository {
     Push-Location $RepoPath
     Write-Host "Switching to branch '$Branch'..."
     git fetch origin --prune
-    git rev-parse --verify --quiet $Branch
+    git rev-parse --verify --quiet $Branch | Out-Null
 
     if ($LASTEXITCODE -ne 0) {
-        git ls-remote --exit-code --heads origin $Branch
+        git ls-remote --exit-code --heads origin $Branch | Out-Null
         if ($LASTEXITCODE -ne 0) {
             throw "Branch '$Branch' was not found on origin."
         }
@@ -202,12 +219,16 @@ function Invoke-DockerComposeDb {
     } else {
         & docker compose -f $composeFile.FullName up -d db
     }
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to start database container (exit code $LASTEXITCODE)."
+    }
 }
 
 function Run-NpmStep {
     param(
         [string]$WorkingDirectory,
-        [string[]]$Commands
+        [object[]]$Commands
     )
 
     if (-not (Test-Path $WorkingDirectory)) {
@@ -218,7 +239,8 @@ function Run-NpmStep {
     Push-Location $WorkingDirectory
     foreach ($cmd in $Commands) {
         Write-Host "Running 'npm $cmd' in $WorkingDirectory ..."
-        $parts = $cmd -split "\s+"
+        $parts = @($cmd)
+
         $npmProcess = Start-Process -FilePath "npm" -ArgumentList $parts -WorkingDirectory $WorkingDirectory -NoNewWindow -Wait -PassThru
         if (-not $npmProcess -or $npmProcess.ExitCode -ne 0) {
             throw "npm $cmd failed with exit code $($npmProcess.ExitCode)."
@@ -235,11 +257,11 @@ function Launch-AppProcesses {
 
     if (Test-Path $BackendDir) {
         Write-Host "Starting backend (new window) ..."
-        $backendProcess = Start-Process -FilePath "npm" -ArgumentList "run","dev" -WorkingDirectory $BackendDir -WindowStyle Normal -PassThru
-        if (-not $backendProcess) {
+        $script:backendProcess = Start-Process -FilePath "npm" -ArgumentList "run","dev" -WorkingDirectory $BackendDir -WindowStyle Normal -PassThru
+        if (-not $script:backendProcess) {
             Write-Warning "Backend process did not start."
         } else {
-            Write-Host "Backend running (PID $($backendProcess.Id))."
+            Write-Host "Backend running (PID $($script:backendProcess.Id))."
         }
     } else {
         Write-Warning "Backend directory not found. Cannot start backend process."
@@ -247,11 +269,11 @@ function Launch-AppProcesses {
 
     if (Test-Path $FrontendDir) {
         Write-Host "Starting frontend (new window) ..."
-        $frontendProcess = Start-Process -FilePath "npm" -ArgumentList "run","dev" -WorkingDirectory $FrontendDir -WindowStyle Normal -PassThru
-        if (-not $frontendProcess) {
+        $script:frontendProcess = Start-Process -FilePath "npm" -ArgumentList "run","dev" -WorkingDirectory $FrontendDir -WindowStyle Normal -PassThru
+        if (-not $script:frontendProcess) {
             Write-Warning "Frontend process did not start."
         } else {
-            Write-Host "Frontend running (PID $($frontendProcess.Id))."
+            Write-Host "Frontend running (PID $($script:frontendProcess.Id))."
         }
     } else {
         Write-Warning "Frontend directory not found. Cannot start frontend process."
@@ -264,7 +286,12 @@ function Launch-AppProcesses {
 $resolvedInstallDir = if ($InstallDir) {
     [System.IO.Path]::GetFullPath($InstallDir)
 } elseif ($PSScriptRoot) {
-    [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\\.."))
+    $repoFromScript = Get-RepoRoot $PSScriptRoot
+    if ($repoFromScript) {
+        $repoFromScript
+    } else {
+        [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\\.."))
+    }
 } else {
     [System.IO.Path]::GetFullPath((Join-Path $HOME "daily-location-status"))
 }
@@ -294,8 +321,8 @@ Write-Header "Step 7/8 - Starting database container"
 Invoke-DockerComposeDb -RepoPath $repoPath
 
 Write-Header "Step 8/8 - Installing dependencies and starting apps"
-Run-NpmStep -WorkingDirectory $backendDir -Commands @("install", "run build:db", "run update:db")
-Run-NpmStep -WorkingDirectory $frontendDir -Commands @("install")
+Run-NpmStep -WorkingDirectory $backendDir -Commands @(@("install"), @("run","build:db"), @("run","update:db"))
+Run-NpmStep -WorkingDirectory $frontendDir -Commands @(@("install"))
 Launch-AppProcesses -BackendDir $backendDir -FrontendDir $frontendDir
 
 Write-Host ""
