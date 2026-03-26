@@ -132,7 +132,14 @@ function Ensure-Repository {
     Push-Location $RepoPath
     Write-Host "Switching to branch '$Branch'..."
     git fetch origin $Branch --prune
-    if (-not (git rev-parse --verify $Branch 2>$null)) {
+    $branchExists = $true
+    try {
+        git rev-parse --verify $Branch *> $null
+    } catch {
+        $branchExists = $false
+    }
+
+    if (-not $branchExists) {
         git switch -c $Branch origin/$Branch
     } else {
         git switch $Branch
@@ -201,7 +208,8 @@ function Run-NpmStep {
     Push-Location $WorkingDirectory
     foreach ($cmd in $Commands) {
         Write-Host "Running 'npm $cmd' in $WorkingDirectory ..."
-        & npm $cmd
+        $parts = $cmd -split "\s+"
+        & npm @parts
     }
     Pop-Location
 }
@@ -214,14 +222,20 @@ function Launch-AppProcesses {
 
     if (Test-Path $BackendDir) {
         Write-Host "Starting backend (new window) ..."
-        Start-Process -FilePath "npm" -ArgumentList "run","dev" -WorkingDirectory $BackendDir -WindowStyle Normal | Out-Null
+        $backendProcess = Start-Process -FilePath "npm" -ArgumentList "run","dev" -WorkingDirectory $BackendDir -WindowStyle Normal
+        if (-not $backendProcess) {
+            Write-Warning "Backend process did not start."
+        }
     } else {
         Write-Warning "Backend directory not found. Cannot start backend process."
     }
 
     if (Test-Path $FrontendDir) {
         Write-Host "Starting frontend (new window) ..."
-        Start-Process -FilePath "npm" -ArgumentList "run","dev" -WorkingDirectory $FrontendDir -WindowStyle Normal | Out-Null
+        $frontendProcess = Start-Process -FilePath "npm" -ArgumentList "run","dev" -WorkingDirectory $FrontendDir -WindowStyle Normal
+        if (-not $frontendProcess) {
+            Write-Warning "Frontend process did not start."
+        }
     } else {
         Write-Warning "Frontend directory not found. Cannot start frontend process."
     }
@@ -233,13 +247,17 @@ function Launch-AppProcesses {
 $resolvedInstallDir = if ($InstallDir) {
     Resolve-Path -Path $InstallDir -ErrorAction SilentlyContinue
 } elseif ($PSScriptRoot) {
-    Resolve-Path -Path (Join-Path $PSScriptRoot "..")
+    Resolve-Path -Path (Join-Path $PSScriptRoot "..") -ErrorAction SilentlyContinue
 } else {
     Resolve-Path -Path (Join-Path $HOME "daily-location-status") -ErrorAction SilentlyContinue
 }
 
 if (-not $resolvedInstallDir) {
-    $resolvedInstallDir = Join-Path $HOME "daily-location-status"
+    if ($InstallDir) {
+        $resolvedInstallDir = [System.IO.Path]::GetFullPath($InstallDir)
+    } else {
+        $resolvedInstallDir = Join-Path $HOME "daily-location-status"
+    }
 }
 $repoPath = $resolvedInstallDir.ToString()
 $backendDir = Join-Path $repoPath "backend"
