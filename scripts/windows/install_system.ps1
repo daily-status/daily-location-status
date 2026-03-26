@@ -24,17 +24,23 @@ This script is aimed at non-technical users. It will:
 Set-StrictMode -Version 3
 $ErrorActionPreference = "Stop"
 
+function New-RandomSecret {
+    $bytes = [System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32)
+    return [System.Convert]::ToBase64String($bytes)
+}
+
 # ---------------------------------------------------------------------------
 # 1) Update this block with your real environment values before running.
 #    The content will be written to `<repo>/.env`.
 # ---------------------------------------------------------------------------
-$EnvFileContent = @'
+$GeneratedJwtSecret = New-RandomSecret
+$EnvFileContent = @"
 # Example .env content for local development
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/daily_location_status
-JWT_SECRET=please-change-me
+JWT_SECRET=$GeneratedJwtSecret
 VITE_API_BASE_URL=http://localhost:8000
 PORT=8000
-'@
+"@
 
 param(
     # Where the repository should live. Defaults to the repo root if the script
@@ -100,7 +106,11 @@ function Ensure-Package {
 
     Ensure-Winget
     Write-Host "Installing $DisplayName via winget..."
-    winget install --id $WingetId -e --accept-package-agreements --accept-source-agreements | Write-Host
+    winget install --id $WingetId -e --accept-package-agreements --accept-source-agreements
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Automatic install failed for $DisplayName (exit code $LASTEXITCODE)."
+    }
 
     if (-not (Get-Command $CommandName -ErrorAction SilentlyContinue)) {
         throw "Failed to install $DisplayName automatically. Please install it manually and rerun."
@@ -135,6 +145,11 @@ function Ensure-Repository {
     git rev-parse --verify $Branch 2>&1 | Out-Null
 
     if ($LASTEXITCODE -ne 0) {
+        git ls-remote --exit-code --heads origin $Branch 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "Branch '$Branch' was not found on origin."
+        }
+
         git switch -c $Branch origin/$Branch
     } else {
         git switch $Branch
@@ -204,7 +219,7 @@ function Run-NpmStep {
     foreach ($cmd in $Commands) {
         Write-Host "Running 'npm $cmd' in $WorkingDirectory ..."
         $parts = $cmd -split "\s+"
-        & npm $parts
+        & npm @parts
     }
     Pop-Location
 }
@@ -242,7 +257,7 @@ function Launch-AppProcesses {
 $resolvedInstallDir = if ($InstallDir) {
     [System.IO.Path]::GetFullPath($InstallDir)
 } elseif ($PSScriptRoot) {
-    [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
+    [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\\.."))
 } else {
     [System.IO.Path]::GetFullPath((Join-Path $HOME "daily-location-status"))
 }
