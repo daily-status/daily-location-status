@@ -5,14 +5,14 @@ WORKDIR /app
 ARG DATABASE_URL
 ENV DATABASE_URL=${DATABASE_URL}
 
-COPY backend/package*.json ./
+COPY package*.json ./
 COPY .env .env
 RUN npm install
 
-COPY backend/tsconfig.json ./
-COPY backend/prisma.config.ts ./
-COPY backend/src ./src
-COPY backend/prisma ./prisma
+COPY tsconfig.json ./
+COPY prisma.config.ts ./
+COPY ./src
+COPY ./prisma
 
 RUN npx prisma generate
 RUN npm run build
