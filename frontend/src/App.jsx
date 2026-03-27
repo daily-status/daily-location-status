@@ -6,6 +6,7 @@ import {
   fetchLocations,
   importLocationsFromExcel,
 } from "./api/locations.ts";
+
 import {
   createReport,
   deleteReport,
@@ -14,6 +15,7 @@ import {
   fetchReports,
   updateReport,
 } from "./api/reports.ts";
+
 import { getTodayString } from "./api/helpers.ts";
 import {
   createUser,
@@ -27,15 +29,17 @@ import PersonTable from "./components/PersonTable";
 import UserEditModal from "./components/UserEditModal";
 import UserHistoryModal from "./components/UserHistoryModal";
 import {
-  DEFAULT_LOCATION_OPTIONS,
-  uniqueLocations,
+  uniqueLocations
 } from "./constants/locations.ts";
+
 import {
   DAILY_STATUS_BAD,
   DAILY_STATUS_MISSING,
   DAILY_STATUS_OK,
 } from "./constants/statuses.ts";
+
 import { toUtcIsoFromLocalInput } from "./utils/dates.ts";
+
 import { getErrorMessage } from "./utils/errors.ts";
 
 const REPORTS_UNAVAILABLE_MESSAGE = "לא קיימים דוחות לתאריך שנבחר.";
@@ -104,16 +108,40 @@ const buildAvailableDates = (reports, todayString, selectedDate) => {
     .sort((left, right) => right.localeCompare(left));
 };
 
+const formatBackupLastUpdated = (value) => {
+  if (!value) {
+    return "";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("he-IL", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(parsed);
+};
+
 function App() {
   const todayString = getTodayString();
+
+  // State Management
   const [users, setUsers] = useState([]);
   const [reports, setReports] = useState([]);
   const [locations, setLocations] = useState([]);
+  const [backupFiles, setBackupFiles] = useState([]);
+  const [selectedBackupDate, setSelectedBackupDate] = useState(todayString);
   const [selectedDate, setSelectedDate] = useState(todayString);
   const [availableDates, setAvailableDates] = useState([todayString]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [backupRendering, setBackupRendering] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+
+  // Filter & Form States
   const [searchTerm, setSearchTerm] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -136,84 +164,61 @@ function App() {
   });
   const [downloadFromDate, setDownloadFromDate] = useState(todayString);
   const [downloadToDate, setDownloadToDate] = useState(todayString);
-  const isReadOnly = selectedDate !== todayString;
-  const homeLocation = DEFAULT_LOCATION_OPTIONS[0];
-  const locationOptions = useMemo(() => {
-    const apiLocationNames = locations.map((location) => location.name);
-    const fallbackLocations =
-      apiLocationNames.length > 0 ? apiLocationNames : DEFAULT_LOCATION_OPTIONS;
 
-    return uniqueLocations(fallbackLocations);
+  const isReadOnly = selectedDate !== todayString;
+
+  // Logic: Memoized Data Transformations
+  const locationOptions = useMemo(() => {
+    const apiNames = locations.map((l) => l.name);
+    return uniqueLocations(apiNames);
   }, [locations]);
 
+  const deletableLocationOptions = useMemo(() => locationOptions,[locationOptions]);
+
+  const locationNameById = useMemo(
+    () => new Map(locations.map((l) => [Number(l.id), String(l.name || "")])),
+    [locations]
+  );
+
+  // FIX: Added missing locationIdByName map (reverse of locationNameById)
   const locationIdByName = useMemo(
     () =>
       new Map(
-        locations
-          .filter((location) => location?.name)
-          .map((location) => [location.name, Number(location.id)])
+        locations.map((l) => [String(l.name || "").trim(), Number(l.id)])
       ),
     [locations]
-  );
-
-  const locationNameById = useMemo(
-    () =>
-      new Map(
-        locations.map((location) => [Number(location.id), String(location.name || "")])
-      ),
-    [locations]
-  );
-
-  const deletableLocationOptions = useMemo(
-    () => locationOptions.filter((location) => location !== homeLocation),
-    [locationOptions, homeLocation]
   );
 
   const people = useMemo(() => {
     return users.map((user) => {
-      const latestReport = getLatestReportForUser(reports, user.id);
-      const location =
-        locationNameById.get(Number(latestReport?.locationId)) ||
-        (latestReport ? String(latestReport.locationId) : "");
+      // MODERN APPROACH: Filter then toSorted() to find the latest report
+      const latest = reports
+      .filter((r) => Number(r?.userId) === Number(user.id))
+      .toSorted((a, b) => 
+        new Date(b?.occurredAt || 0).getTime() - new Date(a?.occurredAt || 0).getTime()
+      )[0];
 
       return {
         person_id: String(user.id),
         full_name: String(user.fullName || ""),
-        location,
-        daily_status: mapReportStatusToDailyStatus(latestReport?.isStatusOk),
+        location: locationNameById.get(Number(latest?.locationId)) || (latest ? String(latest.locationId) : ""),
+        daily_status: latest?.isStatusOk === true ? DAILY_STATUS_OK :
+                      latest?.isStatusOk === false ? DAILY_STATUS_BAD : DAILY_STATUS_MISSING,
         phone: user.phone ? String(user.phone) : "",
-        last_updated: latestReport?.occurredAt || "",
+        last_updated: latest?.occurredAt || "",
       };
     });
   }, [locationNameById, reports, users]);
 
   const filteredPeople = useMemo(() => {
     return people
-      .filter((person) => {
-        const fullName = String(person?.full_name || "");
-        const location = String(person?.location || "");
-        const dailyStatus = String(person?.daily_status || "");
-
-        if (
-          searchTerm &&
-          !fullName.toLowerCase().includes(searchTerm.toLowerCase())
-        ) {
-          return false;
-        }
-
-        if (locationFilter !== "all" && location !== locationFilter) {
-          return false;
-        }
-
-        if (statusFilter !== "all" && dailyStatus !== statusFilter) {
-          return false;
-        }
-
+      .filter((p) => {
+        if (searchTerm && !p.full_name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+        if (locationFilter !== "all" && p.location !== locationFilter) return false;
+        if (statusFilter !== "all" && p.daily_status !== statusFilter) return false;
         return true;
       })
-      .sort((a, b) =>
-        String(a?.full_name || "").localeCompare(String(b?.full_name || ""), "he")
-      );
+      .sort((a, b) => a.full_name.localeCompare(b.full_name, "he"));
   }, [locationFilter, people, searchTerm, statusFilter]);
 
   const canDownloadSelectedDate = Boolean(selectedDate) && !loading && !actionLoading;
@@ -226,11 +231,23 @@ function App() {
     deletableLocationOptions.length > 0 && !actionLoading;
   const canDeleteLocation =
     !actionLoading && deletableLocationOptions.length > 0 && Boolean(locationToDelete);
+  const selectedBackup = useMemo(
+    () => backupFiles.find((backup) => backup?.date === selectedBackupDate) || null,
+    [backupFiles, selectedBackupDate]
+  );
+
+  // Effects: Initial Data Load
+  useEffect(() => {
+    void refreshData(todayString);
+  }, []);
 
   useEffect(() => {
-    void loadDashboard(todayString);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const intervalId = window.setInterval(() => {
+      void refreshData(selectedDate, { silent: true });
+    }, 30000);
+
+    return () => window.clearInterval(intervalId);
+  }, [selectedDate, historyPerson, locationNameById, todayString]);
 
   useEffect(() => {
     if (deletableLocationOptions.length === 0) {
@@ -239,44 +256,103 @@ function App() {
     }
 
     if (!deletableLocationOptions.includes(locationToDelete)) {
-      setLocationToDelete(deletableLocationOptions[0]);
+      setLocationToDelete("");
     }
   }, [deletableLocationOptions, locationToDelete]);
 
-  async function loadDashboard(dateValue) {
-    setLoading(true);
-    setError("");
+  // --- API Actions ---
+
+  async function loadDashboard(dateValue, options = {}) {
+    const { silent = false } = options;
+
+    if (!silent) {
+      setLoading(true);
+      setError("");
+    }
 
     try {
-      const [usersResponse, locationsResponse, allReportsResponse, dateReportsResponse] =
-        await Promise.all([
-          fetchUsers(),
-          fetchLocations(),
-          fetchReports(),
-          fetchReports({ date: dateValue }),
-        ]);
-
-      const safeUsers = Array.isArray(usersResponse) ? usersResponse : [];
-      const safeLocations = Array.isArray(locationsResponse) ? locationsResponse : [];
-      const safeAllReports = Array.isArray(allReportsResponse) ? allReportsResponse : [];
-      const safeDateReports = Array.isArray(dateReportsResponse)
-        ? dateReportsResponse
-        : [];
-
-      setUsers(safeUsers);
-      setLocations(safeLocations);
-      setReports(safeDateReports);
+      const [u, l, allR, dateR] = await Promise.all([
+        fetchUsers(),
+        fetchLocations(),
+        fetchReports(),
+        fetchReports({ date: dateValue }),
+      ]);
+      setUsers(u || []);
+      setLocations(l || []);
+      setReports(dateR || []);
       setSelectedDate(dateValue);
-      setAvailableDates(buildAvailableDates(safeAllReports, todayString, dateValue));
+
+      const historyDates = Array.isArray(allR) ? allR.map(r => r.occurredAt?.slice(0, 10)) : [];
+      setAvailableDates(Array.from(new Set([todayString, dateValue, ...historyDates]))
+        .filter(Boolean).sort((a, b) => b.localeCompare(a)));
     } catch (err) {
-      setUsers([]);
-      setLocations([]);
-      setReports([]);
-      setAvailableDates([todayString]);
-      setError(getErrorMessage(err, "טעינת הנתונים נכשלה"));
+      if (!silent) {
+        setError(getErrorMessage(err, "טעינת הנתונים נכשלה"));
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
+  }
+
+  async function loadBackupFiles() {
+    try {
+      const res = await fetch("/api/reports/backup/list");
+      if (res.ok) {
+        const data = await res.json();
+        const nextBackups = Array.isArray(data) ? data : [];
+        setBackupFiles(nextBackups);
+
+        if (nextBackups.some((backup) => backup?.date === todayString)) {
+          setSelectedBackupDate(todayString);
+        } else if (nextBackups[0]?.date) {
+          setSelectedBackupDate(nextBackups[0].date);
+        }
+      }
+    } catch (err) {
+      // Silently ignore — backup service may not be running
+    }
+  }
+
+  async function refreshData(dateValue = selectedDate, options = {}) {
+    const { silent = false } = options;
+
+    if (!silent) {
+      setRefreshing(true);
+    }
+
+    try {
+      await Promise.all([
+        loadDashboard(dateValue, { silent }),
+        loadBackupFiles(),
+        historyPerson ? loadHistoryReports(historyPerson) : Promise.resolve(),
+      ]);
+    } finally {
+      if (!silent) {
+        setRefreshing(false);
+      }
+    }
+  }
+
+  // FIX: Added missing handleLoadSelectedDate
+  async function handleLoadSelectedDate(dateValue) {
+    if (!dateValue) return;
+    await refreshData(dateValue);
+  }
+
+  // FIX: Added missing handleDownloadDayFile
+  function handleDownloadDayFile() {
+    if (!selectedDate) return;
+    const url = `/api/reports/export?minDate=${selectedDate}T00:00:00.000Z&maxDate=${selectedDate}T23:59:59.999Z`;
+    triggerFileDownload(url, `report_${selectedDate}.xlsx`);
+  }
+
+  // FIX: Added missing handleEditPerson
+  function handleEditPerson(person) {
+    setEditingPerson(person);
+    setEditUserFullName(person?.full_name || "");
+    setEditUserPhone(person?.phone || "");
   }
 
   function triggerFileDownload(url, filename) {
@@ -291,28 +367,13 @@ function App() {
     link.remove();
   }
 
-  async function handleLoadSelectedDate(dateValue) {
-    if (!dateValue) {
-      setError("יש לבחור תאריך לטעינה");
-      return;
-    }
-
-    await loadDashboard(dateValue);
+  async function handleBackupDownload(fileName) {
+    const url = `/api/reports/backup/download/${encodeURIComponent(fileName)}?t=${Date.now()}`;
+    triggerFileDownload(url, fileName);
   }
 
-  function handleEditPerson(person) {
-    setEditingPerson(person);
-    setEditUserFullName(String(person?.full_name || ""));
-    setEditUserPhone(String(person?.phone || ""));
-  }
-
-  async function handleDownloadDayFile() {
-    if (!selectedDate) {
-      setError("יש לבחור תאריך להורדה");
-      return;
-    }
-
-    setActionLoading(true);
+  async function handleRenderBackupNow() {
+    setBackupRendering(true);
     setError("");
 
     try {
@@ -336,10 +397,19 @@ function App() {
       const { url, filename } = exportReportsDownloadInfo(filters, `reports_${selectedDate}.xlsx`);   
 
       triggerFileDownload(url, filename);
+      const res = await fetch("/api/reports/backup", {
+        method: "POST",
+      });
+
+      if (!res.ok) {
+        throw new Error("Backup render failed");
+      }
+
+      await loadBackupFiles();
     } catch (err) {
-      setError(getErrorMessage(err, "הורדת דוח היום נכשלה"));
+      setError(getErrorMessage(err, "יצירת קובץ הגיבוי נכשלה"));
     } finally {
-      setActionLoading(false);
+      setBackupRendering(false);
     }
   }
 
@@ -382,64 +452,40 @@ function App() {
     } finally {
       setActionLoading(false);
     }
+    const url = `/api/reports/export?minDate=${downloadFromDate}T00:00:00.000Z&maxDate=${downloadToDate}T23:59:59.999Z`;
+    triggerFileDownload(url, `report_${downloadFromDate}_to_${downloadToDate}.xlsx`);
   }
 
   async function handleAddLocation() {
-    const normalized = normalizeLocationName(newLocationName);
-    if (!normalized) {
-      setError("יש להזין שם מיקום לפני הוספה");
-      return;
-    }
-
-    if (locationOptions.includes(normalized)) {
-      setError("המיקום כבר קיים ברשימה");
-      return;
-    }
-
+    if (!canAddLocation) return;
     setActionLoading(true);
-    setError("");
-
     try {
-      await createLocation(normalized);
+      await createLocation(newLocationName);
       setNewLocationName("");
       await loadDashboard(selectedDate);
     } catch (err) {
-      setError(getErrorMessage(err, "הוספת מיקום נכשלה"));
+      const message = String(err?.message || "");
+      if (message.toLowerCase().includes("already exists")) {
+        setError("המיקום הזה כבר קיים במערכת.");
+      } else {
+        setError("הוספת מיקום נכשלה");
+      }
     } finally {
       setActionLoading(false);
     }
   }
 
   async function handleDeleteLocation() {
-    const normalized = normalizeLocationName(locationToDelete);
-    if (!normalized) {
-      setError("יש לבחור מיקום למחיקה");
-      return;
-    }
-
-    const location = locations.find((item) => item.name === normalized);
-    if (!location) {
-      setError("לא נמצא מזהה למיקום שנבחר");
-      return;
-    }
-
-    const approved = window.confirm(`למחוק את המיקום "${normalized}"?`);
-    if (!approved) {
-      return;
-    }
-
+    if (!canDeleteLocation) return;
+    const target = locations.find(l => l.name === locationToDelete);
+    if (!target) return;
     setActionLoading(true);
-    setError("");
-
     try {
-      await deleteLocation(location.id);
+      await deleteLocation(target.id);
       setLocationToDelete("");
-      if (locationFilter === normalized) {
-        setLocationFilter("all");
-      }
       await loadDashboard(selectedDate);
     } catch (err) {
-      setError(getErrorMessage(err, "מחיקת מיקום נכשלה"));
+      setError("מחיקת מיקום נכשלה");
     } finally {
       setActionLoading(false);
     }
@@ -768,77 +814,6 @@ function App() {
         </div>
 
         <div className="header-actions">
-          
-          <div className="date-controls">
-            <label htmlFor="snapshot-date">בחירת תאריך</label>
-            <input
-              id="snapshot-date"
-              data-testid="snapshot-date-input"
-              type="date"
-              value={selectedDate}
-              onChange={(event) => setSelectedDate(event.target.value)}
-              max={todayString}
-            />
-            <button
-              className="btn btn-primary"
-              data-testid="load-date-button"
-              onClick={() => handleLoadSelectedDate(selectedDate)}
-              disabled={!canDownloadSelectedDate}
-            >
-              טען תאריך
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={handleDownloadDayFile}
-              disabled={!canDownloadSelectedDate || filteredPeople.length === 0}
-            >
-              הורד אקסל ליום
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <AppToolbar
-        emptyTable={filteredPeople.length === 0}
-        actionLoading={actionLoading}
-        canAddLocation={canAddLocation}
-        canAddUser={canAddUser}
-        canChooseLocationToDelete={canChooseLocationToDelete}
-        canDeleteLocation={canDeleteLocation}
-        locationOptions={locationOptions}
-        deletableLocationOptions={deletableLocationOptions}
-        downloadFromDate={downloadFromDate}
-        downloadToDate={downloadToDate}
-        filteredPeopleCount={filteredPeople.length}
-        handleAddLocation={handleAddLocation}
-        handleAddUser={handleAddUser}
-        handleDeleteLocation={handleDeleteLocation}
-        handleDownloadRangeFiles={handleDownloadRangeFiles}
-        handleImportLocationsFile={handleImportLocationsFile}
-        handleImportUsersFile={handleImportUsersFile}
-        locationFilter={locationFilter}
-        locationToDelete={locationToDelete}
-        newLocationName={newLocationName}
-        newUserFullName={newUserFullName}
-        newUserPhone={newUserPhone}
-        onDownloadFromDateChange={(event) => setDownloadFromDate(event.target.value)}
-        onDownloadToDateChange={(event) => setDownloadToDate(event.target.value)}
-        onLocationFilterChange={(event) => setLocationFilter(event.target.value)}
-        onLocationToDeleteChange={(event) =>
-          setLocationToDelete(event.target.value)
-        }
-        onNewLocationNameChange={(event) => setNewLocationName(event.target.value)}
-        onNewUserFullNameChange={(event) => setNewUserFullName(event.target.value)}
-        onNewUserPhoneChange={(event) => setNewUserPhone(event.target.value)}
-        onSearchTermChange={(event) => setSearchTerm(event.target.value)}
-        onStatusFilterChange={(event) => setStatusFilter(event.target.value)}
-        searchTerm={searchTerm}
-        statusFilter={statusFilter}
-        todayString={todayString}
-      />
-
-      {availableDates.length > 0 ? (
-        <section className="dates-card">
           <div className="date-controls">
             <label htmlFor="snapshot-date">בחירת תאריך</label>
             <input
@@ -856,8 +831,16 @@ function App() {
             />
             <button
               className="btn btn-primary"
-              onClick={handleDownloadDayFile}
+              data-testid="load-date-button"
+              onClick={() => handleLoadSelectedDate(selectedDate)}
               disabled={!canDownloadSelectedDate}
+            >
+              טען תאריך
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleDownloadDayFile}
+              disabled={!canDownloadSelectedDate || filteredPeople.length === 0}
             >
               הורד אקסל ליום
             </button>
@@ -871,8 +854,116 @@ function App() {
               </button>
             ) : null}
           </div>
+        </div>
+      </header>
+
+      {/* BACKUP SECTION — only shown when ENVIRONMENT=local and backups exist */}
+      {backupFiles.length > 0 && (
+        <section className="toolbar-card backup-section">
+          <div className="toolbar-card-header">
+            <h2>גיבויים זמינים</h2>
+            <p className="muted-text">נוצר אוטומטית כל שעה, או בלחיצה ידנית</p>
+          </div>
+
+          <div className="backup-controls">
+            <div className="filter-group backup-date-group">
+              <label htmlFor="backup-date">תאריך גיבוי</label>
+              <input
+                id="backup-date"
+                type="date"
+                value={selectedBackupDate}
+                min={MIN_DATE}
+                max={todayString}
+                onChange={(event) => setSelectedBackupDate(event.target.value)}
+              />
+            </div>
+
+            <div className="backup-status-card">
+              {selectedBackup ? (
+                <>
+                  <strong>{selectedBackup.fileName}</strong>
+                  <span className="muted-text">
+                    {selectedBackup.isToday && selectedBackup.lastUpdatedAt
+                      ? `עודכן לאחרונה: ${formatBackupLastUpdated(selectedBackup.lastUpdatedAt)}`
+                      : `קיים גיבוי לתאריך ${selectedBackup.date}`}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <strong>אין גיבוי לתאריך שנבחר</strong>
+                  <span className="muted-text">בחר תאריך אחר כדי להוריד קובץ קיים.</span>
+                </>
+              )}
+            </div>
+
+            <button
+              className="btn btn-primary"
+              onClick={() => selectedBackup && handleBackupDownload(selectedBackup.fileName)}
+              disabled={!selectedBackup}
+            >
+              הורד גיבוי
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={() => void handleRenderBackupNow()}
+              disabled={backupRendering}
+            >
+              {backupRendering ? "יוצר..." : "עדכן עכשיו"}
+            </button>
+          </div>
         </section>
-      ) : null}
+      )}
+
+      <AppToolbar
+        emptyTable={filteredPeople.length === 0}
+        actionLoading={actionLoading}
+        todayString={todayString}
+        filteredPeopleCount={filteredPeople.length}
+
+        // Filters
+        searchTerm={searchTerm}
+        onSearchTermChange={(event) => setSearchTerm(event.target.value)}
+        locationFilter={locationFilter}
+        onLocationFilterChange={(event) => setLocationFilter(event.target.value)}
+        statusFilter={statusFilter}
+        onStatusFilterChange={(event) => setStatusFilter(event.target.value)}
+
+        // Location Management
+        locationOptions={locationOptions}
+        deletableLocationOptions={deletableLocationOptions}
+        newLocationName={newLocationName}
+        onNewLocationNameChange={(event) => setNewLocationName(event.target.value)}
+        handleAddLocation={handleAddLocation}
+        handleDeleteLocation={handleDeleteLocation}
+        canAddLocation={canAddLocation}
+        canChooseLocationToDelete={canChooseLocationToDelete}
+        canDeleteLocation={canDeleteLocation}
+
+        // Users
+        canAddUser={canAddUser}
+        newUserFullName={newUserFullName}
+        newUserPhone={newUserPhone}
+        onNewUserFullNameChange={(event) => setNewUserFullName(event.target.value)}
+        onNewUserPhoneChange={(event) => setNewUserPhone(event.target.value)}
+        handleAddUser={handleAddUser}
+
+        // Delete location
+        locationToDelete={locationToDelete}
+        onLocationToDeleteChange={(event) =>
+          setLocationToDelete(event.target.value)
+        }
+
+        // Export range
+        downloadFromDate={downloadFromDate}
+        downloadToDate={downloadToDate}
+        onDownloadFromDateChange={(event) => setDownloadFromDate(event.target.value)}
+        onDownloadToDateChange={(event) => setDownloadToDate(event.target.value)}
+        handleDownloadRangeFiles={handleDownloadRangeFiles}
+
+        // Imports
+        handleImportLocationsFile={handleImportLocationsFile}
+        handleImportUsersFile={handleImportUsersFile}
+      />
 
       {isReadOnly ? (
         <div className="history-banner">

@@ -24,10 +24,16 @@ services:
       context: .
       dockerfile: backend/Dockerfile
       args:
-        DATABASE_URL: ${DATABASE_URL}
+        DATABASE_URL: mysql://root:admin@db:3306/daily_status
     container_name: daily-status-api
     restart: always
-    env_file: .env
+    environment:
+     - ENVIRONMENT="local"
+     - PORT=8000
+     - DATABASE_URL=mysql://root:admin@db:3306/daily_status
+     - TELEGRAM_BOT_TOKEN="ENTER TOKEN"
+     - POLL_TIMEOUT_SECONDS=25
+     - POLL_RETRY_SECONDS=5
     ports:
       - "8000:8000"
     depends_on:
@@ -44,10 +50,6 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-      args:
-        FRONTEND_API_BASE_URL: ${FRONTEND_API_BASE_URL}
-        FRONTEND_DEV_SERVER_PORT: ${FRONTEND_DEV_SERVER_PORT}
-        FRONTEND_DEV_PROXY_TARGET: ${FRONTEND_DEV_PROXY_TARGET}
     container_name: daily-status-ui
     restart: unless-stopped
     depends_on:

@@ -9,30 +9,23 @@ export const createLocationReportRouter = (
   backupService: BackupService | null
 ) => {
   const router = Router();
-  const decoratedHandlers = createDecoratedLocationReportHandlers(dal);
+  const reportHandlers = createDecoratedLocationReportHandlers(dal);
 
-  router.get("/", decoratedHandlers.getReportsHandler);
-  router.get("/export", decoratedHandlers.exportReportsHandler);
-  router.get("/:id", decoratedHandlers.getReportByIdHandler);
-  router.post("/", decoratedHandlers.addReportHandler);
-  router.put("/:id", decoratedHandlers.updateReportHandler);
-  router.delete("/:id", decoratedHandlers.deleteReportHandler);
+  // Standard & Export Routes
+router.get("/", reportHandlers.getReportsHandler);
+router.get("/export", reportHandlers.exportReportsHandler);
+router.get("/:id", reportHandlers.getReportByIdHandler);
+router.post("/", reportHandlers.addReportHandler);
+router.put("/:id", reportHandlers.updateReportHandler);
+router.delete("/:id", reportHandlers.deleteReportHandler);
 
-  // Only register backup endpoint when BackupService is running (local env only)
+  // Backup Routes (Conditional based on backupService)
   if (backupService) {
-    router.post(
-      "/backup",
-      httpLogger(
-        async (_req, res) => {
-          await backupService.runBackup();
-          res.json({
-            success: true,
-            message: "Backup created",
-          });
-        },
-        "manualBackupHandler"
-      )
-    );
+    const backupHandlers = createDecoratedBackupHandlers(backupService);
+    
+    router.post("/backup", backupHandlers.manualBackupHandler);
+    router.get("/backup/list", backupHandlers.getBackupListHandler);
+    router.get("/backup/download/:file", backupHandlers.downloadBackupHandler);
   }
 
   return router;
@@ -64,5 +57,20 @@ export const createDecoratedLocationReportHandlers = (
   deleteReportHandler: httpLogger(
     handlers.deleteReportHandler(dal),
     "deleteReportHandler"
+  ),
+});
+
+export const createDecoratedBackupHandlers = (backupService: BackupService) => ({
+  manualBackupHandler: httpLogger(
+    handlers.manualBackupHandler(backupService),
+    "manualBackupHandler"
+  ),
+  getBackupListHandler: httpLogger(
+    handlers.getBackupListHandler(),
+    "getBackupListHandler"
+  ),
+  downloadBackupHandler: httpLogger(
+    handlers.downloadBackupHandler(),
+    "downloadBackupHandler"
   ),
 });

@@ -6,7 +6,7 @@ ARG DATABASE_URL
 ENV DATABASE_URL=${DATABASE_URL}
 
 COPY backend/package*.json ./
-COPY .env .env
+
 RUN npm install
 
 COPY backend/tsconfig.json ./

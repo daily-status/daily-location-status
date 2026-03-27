@@ -5,7 +5,6 @@ import {
   DAILY_STATUS_OK,
 } from "../constants/statuses.ts";
 
-// Toolbar section for filters, location management, report exports, and summary.
 function AppToolbar({
   emptyTable,
   actionLoading,
@@ -13,8 +12,8 @@ function AppToolbar({
   canAddUser,
   canChooseLocationToDelete,
   canDeleteLocation,
-  locationOptions,
-  deletableLocationOptions,
+  locationOptions = [],
+  deletableLocationOptions = [],
   downloadFromDate,
   downloadToDate,
   filteredPeopleCount,
@@ -44,6 +43,7 @@ function AppToolbar({
 }) {
   return (
     <>
+      {/* FILTERS */}
       <section className="toolbar-card">
         <div className="toolbar-card-header">
           <h2>פילטרים</h2>
@@ -51,6 +51,7 @@ function AppToolbar({
         </div>
 
         <div className="toolbar-card-body">
+          {/* Search */}
           <div className="filter-group compact-filter-group">
             <label>חיפוש לפי שם</label>
             <input
@@ -60,6 +61,7 @@ function AppToolbar({
             />
           </div>
 
+          {/* Location filter */}
           <div className="filter-group compact-filter-group">
             <label>פילטר מיקום</label>
             <select value={locationFilter} onChange={onLocationFilterChange}>
@@ -72,6 +74,7 @@ function AppToolbar({
             </select>
           </div>
 
+          {/* Status filter */}
           <div className="filter-group compact-filter-group">
             <label>פילטר סטטוס</label>
             <select value={statusFilter} onChange={onStatusFilterChange}>
@@ -82,6 +85,7 @@ function AppToolbar({
             </select>
           </div>
 
+          {/* Download */}
           <div className="filter-group download-range-group">
             <label>הורד דוחות לפי טווח</label>
             <div className="download-range-row">
@@ -109,19 +113,23 @@ function AppToolbar({
             </div>
           </div>
 
+          {/* Summary */}
           <div className="filter-group summary-box">
             <label>סה"כ מוצגים</label>
             <strong>{filteredPeopleCount}</strong>
           </div>
         </div>
       </section>
+
+      {/* MANAGEMENT */}
       <section className="toolbar-card">
         <div className="toolbar-card-header">
           <h2>ניהול</h2>
-          <p className="muted-text">הוספה, עריכה, ייבוא ומחיקה</p>
+          <p className="muted-text">הוספה, מחיקה וייבוא</p>
         </div>
 
         <div className="toolbar-card-body">
+          {/* Add location */}
           <div className="filter-group location-add-group">
             <label>הוספת מיקום</label>
             <div className="location-add-row">
@@ -146,42 +154,49 @@ function AppToolbar({
             </div>
           </div>
 
+          {/* Delete location */}
           <div className="filter-group location-manage-group">
             <label>מחיקה וייבוא מיקומים</label>
-            <div className="location-remove-row">
-              <select
-                value={locationToDelete}
-                onChange={onLocationToDeleteChange}
-                disabled={!canChooseLocationToDelete}
-              >
-                {deletableLocationOptions.length === 0 ? (
-                  <option value="">אין מיקומים למחיקה</option>
-                ) : (
-                  deletableLocationOptions.map((location) => (
-                    <option key={location} value={location}>
-                      {location}
-                    </option>
-                  ))
-                )}
-              </select>
-              <button
-                className="btn btn-danger"
-                onClick={handleDeleteLocation}
-                disabled={!canDeleteLocation}
-              >
-                מחק מיקום
-              </button>
-            </div>
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleImportLocationsFile}
-              disabled={actionLoading}
-            />
+
+              <div className="location-remove-row">
+                <select
+                  value={locationToDelete}
+                  placeholder="בחר מיקום למחיקה"
+                  onChange={onLocationToDeleteChange}
+                  disabled={!canChooseLocationToDelete}
+                >
+                  <option value="" disabled>
+                    בחר מיקום למחיקה
+                  </option>
+                  {deletableLocationOptions.map((location) => (
+                      <option key={location} value={location}>
+                        {location}
+                      </option>
+                    ))}
+                </select>
+
+                <button
+                  className="btn btn-danger"
+                  onClick={handleDeleteLocation}
+                  disabled={!canDeleteLocation}
+                >
+                  מחק מיקום
+                </button>
+              </div>
+
+              {/* Import locations */}
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleImportLocationsFile}
+                disabled={actionLoading}
+              />
           </div>
 
+          {/* Users */}
           <div className="filter-group user-management-group">
             <label>הוספת משתמש</label>
+
             <div className="stacked-inputs">
               <input
                 placeholder="שם מלא"
@@ -200,6 +215,7 @@ function AppToolbar({
                 }}
               />
             </div>
+
             <button
               className="btn btn-secondary"
               onClick={handleAddUser}
@@ -207,6 +223,8 @@ function AppToolbar({
             >
               הוסף משתמש
             </button>
+
+            {/* Import users */}
             <input
               type="file"
               accept=".xlsx,.xls"
@@ -214,7 +232,6 @@ function AppToolbar({
               disabled={actionLoading}
             />
           </div>
-
         </div>
       </section>
     </>

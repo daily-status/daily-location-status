@@ -15,6 +15,7 @@ backend-node/node_modules/
 backend-node/dist
 
 # Runtime storage files
+backups/
 backend-node/node_modules
 backend/local_storage/
 backend/e2e_storage/

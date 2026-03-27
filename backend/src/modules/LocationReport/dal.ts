@@ -7,6 +7,33 @@ import { UserDal } from "../User/dal";
 import { LocationDal } from "../Location/dal";
 import { Workbook } from "exceljs";
 
+// Temporary compatibility layer until the DB includes LocationReport.notes.
+const locationReportLegacySelect = {
+  id: true,
+  userId: true,
+  locationId: true,
+  occurredAt: true,
+  createdAt: true,
+  isStatusOk: true,
+  source: true,
+} satisfies Prisma.LocationReportSelect;
+
+type LocationReportLegacyRecord = Prisma.LocationReportGetPayload<{
+  select: typeof locationReportLegacySelect;
+}>;
+
+const withoutLegacyNotes = <T extends { notes?: string | null }>(data: T) => {
+  const { notes: _notes, ...compatibleData } = data;
+  return compatibleData;
+};
+
+const withNotesPlaceholder = (
+  report: LocationReportLegacyRecord
+): DBLocationReport => ({
+  ...report,
+  notes: null,
+});
+
 export class LocationReportDal {
   private model;
   constructor(
@@ -16,6 +43,18 @@ export class LocationReportDal {
   ) {
     this.model = prisma.locationReport;
   }
+
+  private findManyCompatible = (where: Prisma.LocationReportWhereInput) =>
+    this.model.findMany({
+      where,
+      select: locationReportLegacySelect,
+    });
+
+  private findUniqueCompatible = (id: number) =>
+    this.model.findUnique({
+      where: { id },
+      select: locationReportLegacySelect,
+    });
 
   getAllReports = async (
     params: SearchQueryOptions,
@@ -50,9 +89,8 @@ export class LocationReportDal {
       };
     }
 
-    return await this.model.findMany({
-      where,
-    });
+    const reports = await this.findManyCompatible(where);
+    return reports.map(withNotesPlaceholder);
   };
 
   createExcelExport = async (params: SearchQueryOptions): Promise<Workbook> => {
@@ -114,13 +152,13 @@ export class LocationReportDal {
   }
 
   getReportById = async (id: number): Promise<DBLocationReport> => {
-    const report = await this.model.findUnique({ where: { id } });
+    const report = await this.findUniqueCompatible(id);
 
     if (!report) {
       throw new NotFoundError("LocationReport", id.toString());
     }
 
-    return report;
+    return withNotesPlaceholder(report);
   };
 
   addReport = async (data: PlainLocationReport): Promise<DBLocationReport> => {
@@ -132,7 +170,12 @@ export class LocationReportDal {
       throw new NotFoundError("Not Found", !existingUserId && !existingLocationId? `Location ${data.locationId.toString()} and User ${data.userId.toString()}` : existingLocationId? `User ${data.userId.toString()}` : `Location ${data.locationId.toString()}`);
     }
 
-    return this.model.create({ data });
+    const report = await this.model.create({
+      data: withoutLegacyNotes(data),
+      select: locationReportLegacySelect,
+    });
+
+    return withNotesPlaceholder(report);
   };
 
   updateReport = async (
@@ -146,15 +189,21 @@ export class LocationReportDal {
     await this.userDal.getUserById(nextUserId);
     await this.locationDal.getLocationById(nextLocationId);
 
-    return this.model.update({
+    const report = await this.model.update({
       where: { id },
-      data,
+      data: withoutLegacyNotes(data),
+      select: locationReportLegacySelect,
     });
+
+    return withNotesPlaceholder(report);
   };
 
   deleteReport = async (id: number): Promise<void> => {
     await this.getReportById(id);
-    await this.model.delete({ where: { id } });
+    await this.model.delete({
+      where: { id },
+      select: locationReportLegacySelect,
+    });
   };
 
   getDailySummaryData = async (date: Date) => {

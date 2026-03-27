@@ -218,6 +218,32 @@
   flex-wrap: wrap;
 }
 
+.backup-section {
+  gap: 12px;
+}
+
+.backup-controls {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.backup-date-group {
+  min-width: 180px;
+}
+
+.backup-status-card {
+  min-width: 240px;
+  flex: 1 1 240px;
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(34, 82, 107, 0.04);
+}
+
 .dates-list {
   display: flex;
   flex-wrap: wrap;

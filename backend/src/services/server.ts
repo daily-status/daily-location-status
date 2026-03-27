@@ -24,6 +24,7 @@ export type ServerConfig = z.infer<typeof ServerConfigSchema>;
 export class Server {
   private app: Express;
   private server?: http.Server;
+  private telegramBot?: TelegramBot;
 
   constructor(
     private config: ServerConfig,
@@ -70,14 +71,27 @@ export class Server {
     );
 
     // Initialize Telegram Bot
-    const telegramBot = new TelegramBot(
+    const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
+
+    if (!telegramBotToken) {
+      logger.info("TelegramBot disabled (missing TELEGRAM_BOT_TOKEN)");
+      return;
+    }
+
+    this.telegramBot = new TelegramBot(
       userDal,
       locationDal,
       locationReportDal,
-      process.env.TELEGRAM_BOT_TOKEN!
+      telegramBotToken
     );
-    
-    await telegramBot.launch();
+
+    try {
+      await this.telegramBot.launch();
+      logger.info("TelegramBot started");
+    } catch (error) {
+      logger.error("TelegramBot failed to start", { error });
+      this.telegramBot = undefined;
+    }
   };
 
   start = () => {
@@ -87,6 +101,7 @@ export class Server {
   };
 
   stop = () => {
+    void this.telegramBot?.stop();
     this.server?.close(() => {
       logger.info(`server gracefully closed`);
     });

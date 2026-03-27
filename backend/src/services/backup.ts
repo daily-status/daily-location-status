@@ -1,14 +1,17 @@
 import { PrismaClient } from "@prisma/client";
 import { Workbook } from "exceljs";
+import type { Worksheet } from "exceljs";
 import * as fs from "fs";
 import * as path from "path";
 import moment from "moment";
 import logger from "../utils/logger";
+import { getBackupDir } from "./backupPath";
 
 export class BackupService {
   private interval?: NodeJS.Timeout;
-  private readonly backupDir = "/app/backups";
-  private readonly intervalMs = 3600000;
+  private readonly backupDir = getBackupDir();
+  private readonly intervalMs = 36000000;
+  private readonly sheetName = "Snapshot";
   private isRunning = false;
 
   constructor(private prisma: PrismaClient) {
@@ -39,18 +42,11 @@ export class BackupService {
       const now = new Date();
       const filePath = this.getFilePath(now);
 
-      const workbook = fs.existsSync(filePath)
-        ? await this.loadWorkbook(filePath)
-        : new Workbook();
+      const workbook = new Workbook();
 
-      const sheetName = this.getSheetName(now);
-      let sheet = workbook.getWorksheet(sheetName);
+      const sheet = this.prepareSheet(workbook, now);
 
-      if (!sheet) {
-        sheet = workbook.addWorksheet(sheetName);
-      }
-
-      await this.fillSheet(sheet);
+      await this.fillSheet(sheet, now);
       await workbook.xlsx.writeFile(filePath);
       this.cleanOldBackups(30);
 
@@ -63,12 +59,6 @@ export class BackupService {
     }
   }
 
-  private async loadWorkbook(filePath: string): Promise<Workbook> {
-    const workbook = new Workbook();
-    await workbook.xlsx.readFile(filePath);
-    return workbook;
-  }
-
   private getFilePath(date: Date): string {
     // Format: DD-MM-YYYY.xlsx — matches client requirement
     const day   = String(date.getDate()).padStart(2, "0");
@@ -77,48 +67,81 @@ export class BackupService {
     return path.join(this.backupDir, `${day}-${month}-${year}.xlsx`);
   }
 
-  private getSheetName(date: Date): string {
-    // HH-mm format — colons are forbidden in Excel sheet names
-    const hours   = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    return `${hours}-${minutes}`;
-  }
-
   private ensureDir() {
     if (!fs.existsSync(this.backupDir)) {
       fs.mkdirSync(this.backupDir, { recursive: true });
     }
   }
 
-  private async fillSheet(sheet: any) {
-    // Only define columns on a new empty sheet.
-    // Redefining on an existing sheet corrupts already-written data.
-    if (sheet.rowCount === 0) {
-      sheet.columns = [
-        { header: "User",     key: "user"     },
-        { header: "Location", key: "location" },
-        { header: "Status",   key: "status"   },
-        { header: "Time",     key: "time"     },
-      ];
-    }
+  private prepareSheet(workbook: Workbook, now: Date): Worksheet {
+    const sheet = workbook.addWorksheet(this.sheetName);
 
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    sheet.columns = [
+      { header: "User", key: "user" },
+      { header: "Location", key: "location" },
+      { header: "Status", key: "status" },
+      { header: "Time", key: "time" },
+    ];
+
+    sheet.getCell("F1").value = "Last Updated";
+    sheet.getCell("F2").value = moment(now).format("DD-MM-YYYY HH:mm:ss");
+
+    return sheet;
+  }
+
+  private async fillSheet(sheet: Worksheet, snapshotDate: Date) {
+    const startOfDay = moment(snapshotDate).startOf("day").toDate();
+    const endOfDay = moment(snapshotDate).endOf("day").toDate();
 
     const reports = await this.prisma.locationReport.findMany({
-      where: { occurredAt: { gte: startOfDay } },
-      include: { user: true, location: true },
+      where: {
+        occurredAt: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+      select: {
+        occurredAt: true,
+        isStatusOk: true,
+        user: {
+          select: {
+            fullName: true,
+          },
+        },
+        location: {
+          select: {
+            name: true,
+          },
+        },
+      },
       orderBy: { occurredAt: "asc" },
+    });
+
+    logger.info("Backup snapshot data loaded", {
+      reportsCount: reports.length,
+      snapshotDate: moment(snapshotDate).format("YYYY-MM-DD"),
+      startOfDay: startOfDay.toISOString(),
+      endOfDay: endOfDay.toISOString(),
     });
 
     reports.forEach((r) => {
       sheet.addRow({
         user:     r.user.fullName,
         location: r.location.name,
-        status:   r.isStatusOk,
-        time:     r.occurredAt,
+        status:
+          r.isStatusOk === true
+            ? "תקין"
+            : r.isStatusOk === false
+              ? "לא תקין"
+              : "לא הוזן",
+        time: moment(r.occurredAt).format("HH:mm"),
       });
     });
+
+    sheet.getColumn("user").width = 24;
+    sheet.getColumn("location").width = 20;
+    sheet.getColumn("status").width = 14;
+    sheet.getColumn("time").width = 12;
   }
 
   private cleanOldBackups(days: number) {
