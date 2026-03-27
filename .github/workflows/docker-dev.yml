@@ -1,10 +1,10 @@
-name: Build and Push Docker Images (dev)
+name: Build and Push Docker Images (TEST)
 
 on:
-  workflow_dispatch:
-  pull_request:
+  push:
     branches:
-      - dev
+      - Image-pipeline-CICD
+  workflow_dispatch:
 
 jobs:
   docker:
@@ -35,17 +35,17 @@ jobs:
         with:
           context: ./backend
           file: ./backend/dockerfile
-          push: ${{ github.event.pull_request.merged == true }}
+          push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/daily-location-status-backend:dev
-            ${{ secrets.DOCKERHUB_USERNAME }}/daily-location-status-backend:dev-${{ steps.vars.outputs.sha_short }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/daily-location-status-backend:test
+            ${{ secrets.DOCKERHUB_USERNAME }}/daily-location-status-backend:test-${{ steps.vars.outputs.sha_short }}
 
       - name: Build and push frontend
         uses: docker/build-push-action@v6
         with:
           context: ./frontend
           file: ./frontend/dockerfile
-          push: ${{ github.event.pull_request.merged == true }}
+          push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/daily-location-status-frontend:dev
-            ${{ secrets.DOCKERHUB_USERNAME }}/daily-location-status-frontend:dev-${{ steps.vars.outputs.sha_short }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/daily-location-status-frontend:test
+            ${{ secrets.DOCKERHUB_USERNAME }}/daily-location-status-frontend:test-${{ steps.vars.outputs.sha_short }}
