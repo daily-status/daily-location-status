@@ -22,10 +22,10 @@ FROM node:22-alpine AS runtime
 
 WORKDIR /app
 
-COPY backend/package*.json ./
+COPY package*.json ./
 RUN npm install --omit=dev
 
-COPY backend/prisma.config.ts ./
+COPY prisma.config.ts ./
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
