@@ -1,20 +1,20 @@
 services:
   db:
     image: mysql:8.1
-    container_name: my_mysql
+    container_name: daily-status-db
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: admin
       MYSQL_DATABASE: daily_status
       MYSQL_PASSWORD: admin
     ports:
-      - "3307:3306"
+      - "3307:3306" # External access via 3307, internal via 3306
     volumes:
       - db_data:/var/lib/mysql
     networks:
       - daily_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-padmin"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -22,12 +22,13 @@ services:
   backend:
     build:
       context: .
-      dockerfile: backend/Dockerfile
+      dockerfile: backend/dockerfile
       args:
+        # Pass variables to the build stage for Prisma client generation
         DATABASE_URL: ${DATABASE_URL}
     container_name: daily-status-api
-    restart: always
-    env_file: .env
+    restart: unless-stopped
+    env_file: .env # Runtime variables
     ports:
       - "8000:8000"
     depends_on:
@@ -43,8 +44,9 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: frontend/Dockerfile
+      dockerfile: frontend/dockerfile
       args:
+        # Baked into the static JS files at build-time
         FRONTEND_API_BASE_URL: ${FRONTEND_API_BASE_URL}
         FRONTEND_DEV_SERVER_PORT: ${FRONTEND_DEV_SERVER_PORT}
         FRONTEND_DEV_PROXY_TARGET: ${FRONTEND_DEV_PROXY_TARGET}
