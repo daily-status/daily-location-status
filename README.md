@@ -1,303 +1,322 @@
-# Daily Status & Location Manager (FastAPI + React)
+# 📍 Daily Status & Location Manager
 
-Web application for managing people, locations, and daily status with full daily Excel snapshots (`.xlsx`) and optional Telegram self-report integration.
+A modern **Express.js + React** web application for tracking people, locations, and daily status updates with Excel export and optional Telegram integration.
 
-UI language is Hebrew by design.  
-Code comments and project documentation are in English.
+**UI Language:** Hebrew | **Documentation:** English
 
-## Core Behavior
+---
 
-- All runtime configuration is in `config/app_config.yaml`.
-- Secrets (for example Telegram token) should be kept in `.env` and not committed.
-- Every date is stored as a full snapshot Excel file.
-- People are maintained in a master list so they do not need to be re-entered daily.
-- If a date file does not exist, the system can auto-create it from master list.
-- Daily status default is `לא הוזן`.
+## 🎯 What It Does
 
-## Security & Reliability
+- **Daily status tracking** – Record and export daily status for each person
+- **Location management** – Track people's locations with event logging
+- **Excel exports** – One-click daily backups and filtered exports (`.xlsx`)
+- **Telegram integration** – Optional self-report submission via Telegram bot
+- **Persistent database** – People and locations stored in MariaDB via Prisma
 
-- Secret loading from `.env` is supported.
-- Global exception handling avoids leaking internal details.
-- Input validation is enforced across API and Telegram flow.
-- Local Excel writes are atomic (`temp` + replace).
-- Process-level file locks protect write flows on single-host multi-process scenarios.
+---
 
-## Project Structure
+## 🚀 Quick Start
 
-Backend:
+For complete setup instructions, see **[INSTALLATION.md](./INSTALLATION.md)**.
 
-- `backend/app/main.py` - FastAPI app startup, middleware, health/status.
-- `backend/app/config.py` - YAML + `.env` settings loading and validation.
-- `backend/app/api/dependencies.py` - shared dependencies and helpers.
-- `backend/app/api/routers/*.py` - API endpoints by domain.
-- `backend/app/services/snapshot_service.py` - business logic for snapshots/master/locations.
-- `backend/app/services/telegram_bot_service.py` - Telegram long-polling service.
-- `backend/app/storage/providers.py` - local/S3/mirrored storage backends.
-- `backend/app/utils/file_lock.py` - cross-process lock utility.
-
-Frontend:
-
-- `frontend/src/App.jsx` - main page/state logic.
-- `frontend/src/api/client.ts` - API client methods.
-- `frontend/src/components/*.jsx` - table and modal components.
-- `frontend/src/constants/*.js` - shared UI constants.
-- `frontend/src/styles.css` - styling.
-
-Config & docs:
-
-- `config/app_config.yaml` - primary configuration.
-- `config/config_readme.txt` - full field reference.
-- `RUN_INSTRUCTIONS.md` - quick local run guide.
-- `production.md` - Windows production + nginx guide.
-
-## Requirements
-
-- Python 3.9+
-- Node.js 18+
-- npm
-- PowerShell (`powershell.exe` / `powershell` / `pwsh` must be in `PATH`)
-
-## Local Development
-
-### 1) Configure
-
-Edit:
-
-- `config/app_config.yaml`
-- `.env` (optional for secrets)
-
-Typical local values:
-
-- `storage.mode: "local"`
-- `storage.local_storage_dir: "./backend/local_storage"`
-- `storage.seed_people_file: "./backend/data/sample_people.xlsx"`
-- `frontend.api_base_url: ""`
-- `frontend.dev_proxy_target: "http://localhost:8000"`
-- `frontend.dev_server_port: 5173`
-
-Optional `.env`:
-
-```env
-TELEGRAM_BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN
-```
-
-### 2) Run Backend
-
-```powershell
-cd backend
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-Health:
-
-- `http://localhost:8000/api/health`
-
-### 3) Run Frontend
-
-```powershell
-cd frontend
-npm install
-npm run dev
-```
-
-Open:
-
-- `http://localhost:5173`
-
-## One-Command Runner (`start_app.sh`)
-
-You can run the app from project root with one command:
+### One-Command Start
 
 ```bash
 ./start_app.sh --dev
 ```
 
-Supported arguments:
-
-- `--dev` - local backend + frontend dev stack (default).
-- `--prod` - on Windows, delegates to `scripts/windows/start_production.ps1`; on non-Windows, runs backend+frontend locally in prod-like mode (`uvicorn` without `--reload` + `npm run preview`).
-- `--stop-prod` - on Windows, delegates to `scripts/windows/stop_production.ps1`.
-- `--skip-install` - skip dependency installation.
-- `--skip-prereq-check` - skip startup prerequisite checks (Python/Node/npm/PowerShell).
-- `--skip-build` - skip frontend build (Windows production flow).
-- `--backend-port <num>` - backend port (default `8000`).
-- `--frontend-port <num>` - frontend port for local mode (default `5173`).
-- `--nginx-port <num>` - nginx port for Windows production flow (default `80`).
-- `--nginx-dir <path>` - custom nginx folder path for Windows production flow.
-- `--help` - print usage.
-
-Startup prerequisite checks (performed before run):
-
-- Python `3.9+`
-- Node.js `18+`
-- `npm`
-- PowerShell (`powershell.exe` / `powershell` / `pwsh`)
-
-If prerequisites are missing on Windows and `winget` is available, the script prompts to install them automatically.  
-In non-interactive shells, automatic install cannot be confirmed, so the script exits with manual install hints.
-
-Windows production examples:
+See all options:
 
 ```bash
-./start_app.sh --prod
-./start_app.sh --prod --skip-install --skip-build
-./start_app.sh --prod --nginx-dir "D:\tools\nginx-1.28.2" --nginx-port 8080
-./start_app.sh --stop-prod --nginx-dir "D:\tools\nginx-1.28.2"
+./start_app.sh --help
 ```
 
-Non-Windows production-like example:
+---
+
+## 🏗️ Architecture
+
+### Backend (Express.js + TypeScript + Prisma)
+
+#### Core Structure
+
+| File / Directory | Purpose |
+|-----------------|---------|
+| `src/index.ts` | App entry point |
+| `src/services/server.ts` | Express app setup, middleware, route registration, error handling |
+| `src/config.ts` | Configuration validation (environment variables) |
+| `src/modules/` | Feature modules: User, Location, LocationReport |
+| `src/services/` | Business services: backup, Telegram bot |
+| `src/utils/` | Shared utilities: errors, decorators, logging |
+
+#### Module Pattern
+
+Each feature module follows a consistent structure:
+
+```
+src/modules/User/
+├── dal.ts        # Data access layer (Prisma queries)
+├── router.ts     # Express route definitions
+├── handlers.ts   # Request handler logic
+├── schemas.ts    # Zod validation schemas
+└── types.ts      # TypeScript types
+```
+
+The same pattern applies to `Location/` and `LocationReport/`.
+
+#### Key Services
+
+| Service | Purpose |
+|---------|---------|
+| `services/server.ts` | Express server: middleware, route registration, global error handler |
+| `services/telegram/TelegramBot.ts` | Telegram bot polling and message handling |
+| `services/backup.ts` | Excel export and backup management |
+| `services/database.ts` | Prisma client initialization |
+
+#### Utilities
+
+| Utility | Purpose |
+|---------|---------|
+| `utils/decorators.ts` | `httpLogger` decorator for request/response logging |
+| `utils/errors/` | Custom error types and client error helpers |
+| `utils/middlewares.ts` | Multer file upload and shared Express middleware |
+| `utils/logger.ts` | Winston logger configuration |
+| `utils/validations.ts` | Shared Zod validation helpers |
+
+---
+
+### 🗄️ Database Schema
+
+Database: **MariaDB** managed via **Prisma ORM** (`backend/prisma/schema.prisma`).
+
+#### Models
+
+**User**
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | Int | Primary key, auto-increment |
+| `fullName` | String | Mapped to `full_name` |
+| `phone` | String | Unique |
+| `telegramUserId` | String? | Optional; mapped to `telegram_user_id` |
+
+**Location**
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | Int | Primary key, auto-increment |
+| `name` | String | Unique |
+
+**LocationReport**
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | Int | Primary key, auto-increment |
+| `userId` | Int | Foreign key → User |
+| `locationId` | Int | Foreign key → Location |
+| `occurredAt` | DateTime | Defaults to now |
+| `createdAt` | DateTime | Defaults to now |
+| `isStatusOk` | Boolean? | Optional status flag |
+| `source` | Source | Enum: `ui` or `bot` |
+| `notes` | String? | Optional free text |
+
+**Source Enum:** `ui` (submitted via web UI) | `bot` (submitted via Telegram bot)
+
+---
+
+### 🖥️ Frontend (React + TypeScript)
+
+| File / Directory | Purpose |
+|-----------------|---------|
+| `src/App.jsx` | Main app state and page logic |
+| `src/api/client.ts` | API client methods |
+| `src/components/` | UI components (tables, modals) |
+| `src/constants/` | Shared UI constants |
+| `src/styles.css` | Styling |
+
+Built with **React**, **TypeScript**, and **Vite**.
+
+---
+
+## 📋 API Endpoints
+
+Base URL: `http://localhost:3000`
+
+### 👤 Users
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/users` | Get all users |
+| `GET` | `/users/:id` | Get user by ID |
+| `POST` | `/users` | Create user |
+| `PUT` | `/users/:id` | Update user |
+| `DELETE` | `/users/:id` | Delete user |
+| `POST` | `/users/excel` | Bulk upload users from Excel |
+
+### 📍 Locations
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/locations` | Get all locations |
+| `GET` | `/locations/:id` | Get location by ID |
+| `POST` | `/locations` | Create location |
+| `DELETE` | `/locations/:id` | Delete location |
+| `POST` | `/locations/excel` | Bulk upload locations from Excel |
+
+### 📊 Reports
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/reports` | Get reports (default: today) |
+| `POST` | `/reports` | Create report |
+| `PUT` | `/reports/:id` | Update report |
+| `DELETE` | `/reports/:id` | Delete report |
+| `GET` | `/reports/export` | Export filtered reports to Excel |
+| `POST` | `/reports/backup` | Trigger manual backup |
+| `GET` | `/reports/backup/list` | List available backups |
+| `GET` | `/reports/backup/download/:file` | Download a backup file |
+
+#### Report Filters (query parameters)
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `date` | date | Filter by specific date |
+| `minDate` | date-time | Filter from this date/time |
+| `maxDate` | date-time | Filter up to this date/time |
+| `userId` | integer | Filter by user ID |
+| `locationId` | integer | Filter by location ID |
+| `status` | string | Filter by status value |
+
+Full OpenAPI spec: [`backend/openapi.yaml`](./backend/openapi.yaml)
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables (`.env` in `backend/`)
+
+```env
+NODE_ENV=development
+DATABASE_URL=mysql://user:password@localhost:3306/daily_status
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+PORT=3000
+```
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | ✅ | MariaDB/MySQL connection string |
+| `TELEGRAM_BOT_TOKEN` | ⬜ | Telegram bot token (optional) |
+| `PORT` | ⬜ | Server port (default: `3000`) |
+| `NODE_ENV` | ⬜ | `development` or `production` |
+
+---
+
+## 📦 Tech Stack
+
+### Backend
+
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| Node.js | 18+ | Runtime |
+| Express.js | 4.x | HTTP framework |
+| TypeScript | 5.x | Language |
+| Prisma | 7.x | ORM + migrations |
+| MariaDB | — | Database |
+| Zod | 4.x | Request validation |
+| Winston | 3.x | Logging |
+| ExcelJS | 4.x | Excel export |
+| Telegraf | 4.x | Telegram bot |
+| Jest | — | Unit testing |
+| Nodemon | — | Dev hot-reload |
+
+### Frontend
+
+| Technology | Purpose |
+|-----------|---------|
+| React | UI framework |
+| TypeScript | Language |
+| Vite | Build tool |
+| Playwright | E2E testing |
+
+---
+
+## 🧪 Testing & Building
+
+### Backend
 
 ```bash
-./start_app.sh --prod --backend-port 8000 --frontend-port 5173
-```
-
-## Production on Windows (with nginx)
-
-See:
-
-- `production.md`
-
-Main command:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\windows\start_production.ps1
-```
-
-## Storage Output (Excel Files)
-
-In local mode:
-
-- `backend/local_storage/master/people_master.xlsx`
-- `backend/local_storage/master/locations.xlsx`
-- `backend/local_storage/snapshots/YYYY-MM-DD.xlsx`
-
-Each daily snapshot workbook contains sheets:
-- `snapshot` (current day state)
-- `location_events` (raw movement event log for that date)
-
-In S3 or dual mode:
-
-- Same logical keys are used under configured S3 prefix/bucket.
-
-## Supported Status Values
-
-Daily status (`daily_status`):
-
-- `תקין`
-- `לא תקין`
-- `לא הוזן`
-
-Self-report status (`self_daily_status`):
-
-- `תקין`
-- `לא תקין`
-
-## Main API Endpoints
-
-- `GET /api/health`
-- `GET /api/system/status`
-- `GET /api/snapshot/today`
-- `GET /api/snapshot/{YYYY-MM-DD}`
-- `POST /api/snapshot/{YYYY-MM-DD}/save`
-- `GET /api/history/dates`
-- `POST /api/history/{YYYY-MM-DD}/restore-to-today`
-- `GET /api/locations`
-- `POST /api/locations`
-- `DELETE /api/locations/{location_name}`
-- `POST /api/people`
-- `POST /api/people/initialize-list`
-- `PATCH /api/people/{person_id}`
-- `PUT /api/people/{person_id}`
-- `DELETE /api/people/{person_id}`
-- `GET /api/people/{person_id}/location-events?snapshot_date=YYYY-MM-DD`
-- `POST /api/people/{person_id}/location-events`
-- `DELETE /api/people/{person_id}/location-events/{event_id}`
-- `POST /api/self-report`
-- `GET /api/export/day/{YYYY-MM-DD}`
-- `GET /api/export/range?date_from=YYYY-MM-DD&date_to=YYYY-MM-DD`
-
-Export workbook format:
-
-- Sheet `snapshot`: current daily state + tracking summary columns (`locations_visited`, `location_events_count`, `location_timeline`).
-- Sheet `location_events`: raw per-person movement events for that day.
-
-## Tests & Build
-
-Backend tests:
-
-```powershell
 cd backend
-pytest -q
+npm run dev          # Development mode (watch + hot-reload)
+npm run build        # TypeScript compilation
+npm test             # Run Jest unit tests
+npm run build:db     # Run Prisma migrations
+npm run update:db    # Regenerate Prisma client
+npm start            # Production mode (compiled dist)
 ```
 
-Backend bytecode compile check:
+### Frontend
 
-```powershell
+```bash
+cd frontend
+npm run build              # Production build
+npm run test:e2e:install   # Install Playwright browsers
+npm run test:e2e           # Run E2E tests
+```
+
+---
+
+## 🔐 Security & Reliability
+
+- ✅ Secrets in `.env` (never committed)
+- ✅ Zod schema validation on all request inputs
+- ✅ Global error handler prevents internal detail leaks
+- ✅ SQL injection prevention via Prisma prepared statements
+- ✅ Request/response logging via `httpLogger` decorator (Winston)
+- ✅ CORS enabled for frontend access
+- ✅ HTTP status codes for clear API responses
+
+---
+
+## 🚀 Production Deployment
+
+### Docker
+
+```bash
 cd backend
-python -m compileall app
+docker build -f dockerfile -t daily-status-backend .
+docker run \
+  -e DATABASE_URL=mysql://user:password@host:3306/db \
+  -e TELEGRAM_BOT_TOKEN=your_token \
+  -p 3000:3000 \
+  daily-status-backend
 ```
 
-Frontend production build:
+### Docker Compose
 
-```powershell
-cd frontend
-npm run build
+```bash
+docker-compose up -d
 ```
 
-Frontend E2E tests (Playwright):
+See [`docker-compose.yml`](./docker-compose.yml) for full configuration.
 
-```powershell
-cd frontend
-npm run test:e2e:install
-npm run test:e2e
-```
+---
 
-Backend smoke test (starts backend temporarily and checks critical endpoints):
+## ❓ Troubleshooting
 
-```powershell
-python scripts/smoke_backend.py
-```
+| Issue | Solution |
+|-------|----------|
+| *Database connection failed* | Verify `DATABASE_URL` in `.env` and that MariaDB is running |
+| *Telegram bot not starting* | Ensure `TELEGRAM_BOT_TOKEN` is set correctly in `.env` |
+| *Frontend can't reach backend* | Check the frontend proxy config or `VITE_API_BASE_URL` |
+| *Port already in use* | Change `PORT` in `.env` |
+| *Prisma client out of sync* | Run `npm run update:db` in `backend/` |
+| *Migration failed* | Run `npm run build:db` in `backend/` |
 
-## CI
+---
 
-GitHub Actions workflow is included:
+## 📚 Documentation
 
-- `.github/workflows/ci.yml`
-
-It runs on every `push` and `pull_request` and includes:
-
-1. `pytest -q` (backend tests)
-2. `pyflakes` (backend static checks)
-3. `vulture --min-confidence 80` (dead-code scan)
-4. `npm run build` (frontend build)
-5. `npm run test:e2e` (frontend Playwright flows)
-6. `python scripts/smoke_backend.py` (temporary backend smoke test)
-
-## Common Issues
-
-### `Seed people file was not found`
-
-Check `storage.seed_people_file` in `config/app_config.yaml`.
-
-### Frontend cannot reach backend
-
-Check:
-
-- `frontend.api_base_url: ""`
-- `frontend.dev_proxy_target: "http://localhost:8000"`
-
-### Config change does not apply
-
-Restart backend (and frontend in dev mode) after changing `config/app_config.yaml`.
-
-## Migration/Scale Note
-
-Current MVP is Excel-first and works well for small/medium usage.  
-For high concurrency/load, move operational writes to SQLite/Postgres and keep Excel as daily export snapshots.
-
-See:
-
-- `DB_SCALE_PLAN.md`
+- [Installation Guide](./INSTALLATION.md)
+- [OpenAPI Spec](./backend/openapi.yaml)
+- [Prisma Schema](./backend/prisma/schema.prisma)
+- [DevOps Notes](./README.devops.md)
