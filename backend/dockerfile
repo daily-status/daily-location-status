@@ -1,40 +1,30 @@
 # --- Stage 1: Build ---
 FROM node:22-alpine AS build
-
-# System dependencies for Prisma engines
 RUN apk add --no-cache openssl
-
 WORKDIR /app
 
-# Install dependencies first to leverage Docker cache
-COPY package*.json ./
-COPY prisma ./prisma/
+# Pull from backend folder specifically
+COPY backend/package*.json ./
+COPY backend/prisma ./prisma/
 
 RUN npm install
 
-# Copy source and build
-COPY . .
+# Copy everything from backend to /app
+COPY backend/ ./
 RUN npx prisma generate
 RUN npm run build
 
 # --- Stage 2: Runtime ---
 FROM node:22-alpine AS runtime
-
-# Runtime dependency for Prisma
 RUN apk add --no-cache openssl
-
 WORKDIR /app
 
-# Copy production artifacts only
 COPY --from=build /app/package*.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
 
-# Security: Don't run as root
 USER node
-
 EXPOSE 8000
 
-# We inject DATABASE_URL at runtime via the environment, not the image
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]

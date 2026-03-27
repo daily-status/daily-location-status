@@ -9,7 +9,6 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
 
@@ -33,19 +32,22 @@ jobs:
       - name: Build and push backend
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
+          context: . # Standardized to Root
           file: ./backend/dockerfile
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/daily-location-status-backend:test
             ${{ secrets.DOCKERHUB_USERNAME }}/daily-location-status-backend:test-${{ steps.vars.outputs.sha_short }}
 
+      # Note: I'm adding build-args here so your frontend variables actually work.
       - name: Build and push frontend
         uses: docker/build-push-action@v6
         with:
-          context: ./frontend
+          context: . # Standardized to Root
           file: ./frontend/dockerfile
           push: true
+          build-args: |
+            FRONTEND_API_BASE_URL=${{ secrets.FRONTEND_API_BASE_URL }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/daily-location-status-frontend:test
             ${{ secrets.DOCKERHUB_USERNAME }}/daily-location-status-frontend:test-${{ steps.vars.outputs.sha_short }}
