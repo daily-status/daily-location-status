@@ -725,7 +725,14 @@ function App() {
       await importUsersFromExcel(file);
       await loadDashboard(selectedDate);
     } catch (err) {
-      setError(getErrorMessage(err, "ייבוא משתמשים מאקסל נכשל"));
+      const message = getErrorMessage(err, "הוספת משתמש נכשלה");
+
+      if(message.includes("invalid_format")) {
+        setError(getErrorMessage("אחד או יותר ממספרי הטלפון שהוזנו לא היו תקינים", "ייבוא משתמשים מאקסל נכשל"));
+      } else {
+        setError(message);
+      }
+      
     } finally {
       setActionLoading(false);
     }
