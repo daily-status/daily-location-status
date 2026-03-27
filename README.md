@@ -38,7 +38,7 @@ Backend:
 Frontend:
 
 - `frontend/src/App.jsx` - main page/state logic.
-- `frontend/src/api/client.js` - API client methods.
+- `frontend/src/api/client.ts` - API client methods.
 - `frontend/src/components/*.jsx` - table and modal components.
 - `frontend/src/constants/*.js` - shared UI constants.
 - `frontend/src/styles.css` - styling.

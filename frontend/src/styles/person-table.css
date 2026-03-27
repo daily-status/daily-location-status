@@ -1,0 +1,48 @@
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.people-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1180px;
+}
+
+.people-table th,
+.people-table td {
+  border-bottom: 1px solid #e3edf4;
+  padding: 10px;
+  text-align: right;
+  vertical-align: top;
+}
+
+.people-table thead th {
+  background: #f4f9fd;
+  color: #1f4459;
+}
+
+.column-note {
+  margin-top: 4px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #8a2127;
+}
+
+.quick-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.people-table td:last-child,
+.people-table th:last-child {
+  white-space: nowrap;
+  width: 1%;
+}
+
+.empty-row {
+  text-align: center !important;
+  color: var(--muted);
+  padding: 24px !important;
+}

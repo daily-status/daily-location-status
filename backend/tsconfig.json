@@ -1,0 +1,37 @@
+//   "compilerOptions": {
+//     "target": "ES2022",
+//     "module": "commonjs",
+//     // "moduleResolution": "NodeNext",
+//     "rootDir": "./src",
+//     "outDir": "./dist",
+//     "allowJs": true,
+//     "checkJs": false,
+//     "strict": false,
+//     "esModuleInterop": true,
+//     "skipLibCheck": true,
+//     "resolveJsonModule": true,
+//     "types": ["node"]
+//   },
+//   "include": ["./src/**/*"],
+//   "exclude": ["node_modules", "dist"]
+{
+  "compilerOptions": {
+    "typeRoots": ["./node_modules/@types"],
+    "types": ["node", "jest"],
+    "target": "ES2020",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": ["./src/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/__tests__/**"
+  ]
+}

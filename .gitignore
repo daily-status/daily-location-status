@@ -1,4 +1,4 @@
-﻿# Python
+# Python
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -11,10 +11,15 @@ frontend/node_modules/
 frontend/dist/
 frontend/playwright-report/
 frontend/test-results/
+backend-node/node_modules/
+backend-node/dist
 
 # Runtime storage files
+backups/
+backend-node/node_modules
 backend/local_storage/
 backend/e2e_storage/
+backend-node/local_storage/
 
 
 # Secrets / local environment

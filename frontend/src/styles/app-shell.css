@@ -1,0 +1,314 @@
+.app-shell {
+  width: min(1240px, 95vw);
+  margin: 24px auto;
+  display: grid;
+  gap: 16px;
+}
+
+.header-card,
+.toolbar-card,
+.dates-card,
+.content-area {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(34, 82, 107, 0.08);
+}
+
+.header-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.header-card h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.auto-refresh-note {
+  font-size: 0.86rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.date-controls {
+  display: flex;
+  flex-direction: row;      
+  gap: 8px;                 
+  align-items: center;      
+  flex-wrap: nowrap;        
+}
+
+.filter-group {
+  display: grid;
+  gap: 6px;
+  min-width: 170px;
+}
+
+.compact-filter-group {
+  min-width: 118px;
+  width: 118px;
+  max-width: 118px;
+  gap: 2px;
+  align-content: start;
+}
+
+.compact-filter-group input,
+.compact-filter-group select {
+  height: 28px;
+  min-height: 28px;
+  padding: 3px 8px;
+  font-size: 0.82rem;
+  border-radius: 8px;
+  margin: 0;
+}
+
+.compact-filter-group label {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.toolbar-card {
+  display: grid;
+  gap: 14px;
+}
+
+.toolbar-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.toolbar-card-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.toolbar-card-header .muted-text {
+  margin: 0;
+}
+
+.toolbar-card-body {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.toolbar-btn {
+  padding: 6px 10px;
+  font-size: 0.84rem;
+  border-radius: 8px;
+}
+
+.summary-box {
+  min-width: 90px;
+  justify-items: center;
+}
+
+.location-add-group {
+  min-width: 250px;
+}
+
+.initial-people-group {
+  min-width: 280px;
+}
+
+.initial-people-group textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+
+.location-add-row {
+  display: flex;
+  gap: 8px;
+}
+
+.location-add-row .btn {
+  white-space: nowrap;
+}
+
+.stacked-inputs {
+  display: grid;
+  gap: 8px;
+}
+
+.location-remove-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.location-remove-row .btn {
+  white-space: nowrap;
+}
+
+.file-upload-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.location-person-action-row {
+  margin-top: 8px;
+}
+
+.location-manage-group,
+.user-management-group {
+  min-width: 260px;
+}
+
+.user-edit-group {
+  min-width: 520px;
+  flex: 1 1 520px;
+}
+
+.user-edit-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.user-edit-row select {
+  flex: 1 1 150px;
+  min-width: 150px;
+}
+
+.user-edit-row input {
+  flex: 1 1 120px;
+  min-width: 120px;
+}
+
+.user-edit-row .btn {
+  white-space: nowrap;
+}
+
+.download-range-group {
+  min-width: 320px;
+}
+
+.download-range-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.download-range-row input {
+  width: 140px;
+}
+
+.dates-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.backup-section {
+  gap: 12px;
+}
+
+.backup-controls {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.backup-date-group {
+  min-width: 180px;
+}
+
+.backup-status-card {
+  min-width: 240px;
+  flex: 1 1 240px;
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(34, 82, 107, 0.04);
+}
+
+.dates-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.history-banner,
+.error-banner,
+.loading-box {
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.history-banner {
+  background: #fff4e5;
+  border: 1px solid #ffd79d;
+  color: #7d4e00;
+}
+
+.error-banner {
+  background: var(--error-bg);
+  border: 1px solid #f3bcc0;
+  color: var(--error-text);
+}
+
+.loading-box {
+  background: #ecf6ff;
+  border: 1px solid #c6ddf0;
+  color: #0d4f7a;
+}
+
+@media (max-width: 760px) {
+  .header-card,
+  .toolbar-card,
+  .dates-card,
+  .content-area {
+    border-radius: 12px;
+    padding: 12px;
+  }
+
+  .header-card h1 {
+    font-size: 1.3rem;
+  }
+
+  .date-controls {
+    width: 100%;
+  }
+
+  .date-controls input,
+  .date-controls button {
+    width: 100%;
+  }
+
+  .filter-group {
+    min-width: 100%;
+  }
+
+  .toolbar-card-header {
+    align-items: flex-start;
+  }
+
+  .compact-filter-group {
+    min-width: 100%;
+    width: 100%;
+    max-width: 100%;
+  }
+}

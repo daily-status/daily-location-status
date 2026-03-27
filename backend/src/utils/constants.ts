@@ -1,0 +1,3 @@
+const BYTES_PER_MB = 1024 * 1024;
+
+export const MAX_EXCEL_UPLOAD_SIZE_BYTES = 5 * BYTES_PER_MB;

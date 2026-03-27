@@ -1,0 +1,222 @@
+:root {
+  font-family: "Assistant", "Segoe UI", sans-serif;
+  color: #14323f;
+  background: linear-gradient(135deg, #f7fbff 0%, #e7f1f7 45%, #f3f7ef 100%);
+
+  --card-bg: #ffffff;
+  --border: #c9d9e4;
+  --primary: #155b8a;
+  --primary-hover: #0f466c;
+  --warning: #b86a00;
+  --warning-hover: #8f5000;
+  --muted: #4d6270;
+  --home-bg: #d9f1ff;
+  --home-text: #0f4f7a;
+  --location-1-bg: #ffe9d2;
+  --location-1-text: #7f4500;
+  --location-2-bg: #ece1ff;
+  --location-2-text: #5b2a92;
+  --location-3-bg: #d6f2eb;
+  --location-3-text: #0f5c49;
+  --location-4-bg: #ffe5ef;
+  --location-4-text: #8f1b55;
+  --location-5-bg: #fff4cf;
+  --location-5-text: #6e5300;
+  --ok-bg: #daf5df;
+  --ok-text: #1f6d30;
+  --bad-bg: #f8d7d9;
+  --bad-text: #8a1f2a;
+  --missing-bg: #fff4c7;
+  --missing-text: #6f5600;
+  --error-bg: #ffe5e6;
+  --error-text: #8a2127;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.muted-text {
+  color: var(--muted);
+  margin: 6px 0 0;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  padding: 8px 10px;
+  font-size: 0.96rem;
+}
+
+.btn {
+  border: 0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.btn-secondary {
+  background: #eff4f7;
+  color: #22465c;
+}
+
+.btn-warning {
+  background: var(--warning);
+  color: #fff;
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: var(--warning-hover);
+}
+
+.btn-danger {
+  background: #be2c2c;
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #942121;
+}
+
+.btn-chip {
+  background: #f3f7fb;
+  color: #1f4a66;
+  border: 1px solid #d6e4ee;
+  padding: 5px 9px;
+}
+
+.btn-chip.active-date {
+  border-color: var(--primary);
+  color: #fff;
+  background: var(--primary);
+}
+
+.btn-status-choice {
+  border-color: #d5e2ec;
+  background: #f3f7fb;
+  color: #5c6f7d;
+}
+
+.btn-status-choice.active-status-ok {
+  font-weight: 800;
+  background: var(--ok-bg);
+  color: var(--ok-text);
+  border-color: #78bf89;
+}
+
+.btn-status-choice.active-status-bad {
+  font-weight: 800;
+  background: var(--bad-bg);
+  color: var(--bad-text);
+  border-color: #cc7f87;
+}
+
+.btn-status-choice.active-status-missing {
+  font-weight: 800;
+  background: var(--missing-bg);
+  color: var(--missing-text);
+  border-color: #c6a336;
+}
+
+.status-chip {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.chip-home {
+  background: var(--home-bg);
+  color: var(--home-text);
+}
+
+.chip-location-1 {
+  background: var(--location-1-bg);
+  color: var(--location-1-text);
+}
+
+.chip-location-2 {
+  background: var(--location-2-bg);
+  color: var(--location-2-text);
+}
+
+.chip-location-3 {
+  background: var(--location-3-bg);
+  color: var(--location-3-text);
+}
+
+.chip-location-4 {
+  background: var(--location-4-bg);
+  color: var(--location-4-text);
+}
+
+.chip-location-5 {
+  background: var(--location-5-bg);
+  color: var(--location-5-text);
+}
+
+.chip-custom-location {
+  background: #e8edf2;
+  color: #2d4f63;
+}
+
+.chip-status-ok {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+}
+
+.chip-status-bad {
+  background: var(--bad-bg);
+  color: var(--bad-text);
+}
+
+.chip-status-missing {
+  background: var(--missing-bg);
+  color: var(--missing-text);
+}
+
+.neutral-chip {
+  background: #d9e4ee;
+  color: #24465b;
+}
+
+.warning-chip {
+  background: #ffe8c4;
+  color: #7a4a00;
+}
+
+.btn-small {
+  padding: 5px 9px;
+  font-size: 0.82rem;
+}

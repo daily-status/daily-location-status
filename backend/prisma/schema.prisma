@@ -1,0 +1,48 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id               Int               @id @default(autoincrement())
+  fullName         String            @map("full_name")
+  phone            String            @unique
+  telegramUserId   String?           @map("telegram_user_id")
+
+  locationReports  LocationReport[]
+}
+
+model Location {
+  id              Int               @id @default(autoincrement())
+  name            String            @unique
+
+  locationReports LocationReport[]
+}
+
+model LocationReport {
+  id            Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  locationId    Int      @map("location_id")
+  occurredAt    DateTime   @default(now()) @map("occurred_at")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  isStatusOk    Boolean?    @map("is_status_ok")
+  source        Source
+  notes         String?
+  
+  user   User   @relation(fields: [userId], references: [id])
+  location Location @relation(fields: [locationId], references: [id])
+}
+
+enum Source {
+  ui
+  bot
+}
+

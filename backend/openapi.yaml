@@ -1,0 +1,301 @@
+openapi: 3.0.3
+info:
+  title: Daily Location Status API
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+
+tags:
+  - name: Locations
+  - name: Users
+  - name: Reports
+
+paths:
+  /locations:
+    get:
+      tags:
+        - Locations
+      summary: Get all active locations
+      responses:
+        '200':
+          description: List of locations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Location'
+
+    post:
+      tags:
+        - Locations
+      summary: Create a new location
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Created location
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+
+  /locations/{id}:
+    get:
+      tags:
+        - Locations
+      summary: Get location by ID
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Location
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+
+    delete:
+      tags:
+        - Locations
+      summary: Delete a location
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Deleted
+
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Get all active users
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+    patch:
+      tags:
+        - Users
+      summary: Update user (partial)
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: integer
+                name:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        '200':
+          description: Updated
+
+  /reports:
+    get:
+      tags:
+        - Reports
+      summary: "Get reports (default: today)"
+      parameters:
+        - in: query
+          name: minDate
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: maxDate
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: userId
+          schema:
+            type: integer
+        - in: query
+          name: locationId
+          schema:
+            type: integer
+        - in: query
+          name: status
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Report'
+
+    post:
+      tags:
+        - Reports
+      summary: Create a report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, locationId, occuredAt, source]
+              properties:
+                userId:
+                  type: integer
+                locationId:
+                  type: integer
+                isDailyStatusOK:
+                  type: boolean
+                occuredAt:
+                  type: string
+                  format: date-time
+                source:
+                  type: string
+                  enum: [ui, bot]
+      responses:
+        '201':
+          description: Created
+
+  /reports/export:
+    get:
+      tags:
+        - Reports
+      summary: Export reports to Excel
+      parameters:
+        - $ref: '#/components/parameters/minDate'
+        - $ref: '#/components/parameters/maxDate'
+        - $ref: '#/components/parameters/date'
+        - $ref: '#/components/parameters/userId'
+        - $ref: '#/components/parameters/locationId'
+        - $ref: '#/components/parameters/status'
+      responses:
+        '200':
+          description: Excel file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+components:
+  parameters:
+    IdParam:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+
+    minDate:
+      in: query
+      name: minDate
+      schema:
+        type: string
+        format: date-time
+
+    maxDate:
+      in: query
+      name: maxDate
+      schema:
+        type: string
+        format: date-time
+
+    date:
+      in: query
+      name: date
+      schema:
+        type: string
+        format: date
+
+    userId:
+      in: query
+      name: userId
+      schema:
+        type: integer
+
+    locationId:
+      in: query
+      name: locationId
+      schema:
+        type: integer
+
+    status:
+      in: query
+      name: status
+      schema:
+        type: string
+
+  schemas:
+    Location:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        phone:
+          type: string
+
+    Report:
+      type: object
+      properties:
+        userId:
+          type: integer
+        locationId:
+          type: integer
+        isDailyStatusOK:
+          type: boolean
+        occuredAt:
+          type: string
+          format: date-time

@@ -1,0 +1,68 @@
+services:
+  db:
+    image: mysql:8.1
+    container_name: my_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: daily_status
+      MYSQL_PASSWORD: admin
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - daily_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        DATABASE_URL: mysql://root:admin@db:3306/daily_status
+    container_name: daily-status-api
+    restart: always
+    environment:
+     - ENVIRONMENT="local"
+     - PORT=8000
+     - DATABASE_URL=mysql://root:admin@db:3306/daily_status
+     - TELEGRAM_BOT_TOKEN="ENTER TOKEN"
+     - POLL_TIMEOUT_SECONDS=25
+     - POLL_RETRY_SECONDS=5
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - daily_network
+    volumes:
+      - ./backend/storage:/app/storage
+      - ./backend/data:/app/data
+      - ./backups:/app/backups
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: daily-status-ui
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    networks:
+      - daily_network
+
+networks:
+  daily_network:
+    driver: bridge
+
+volumes:
+  db_data:
