@@ -3,7 +3,7 @@ name: Build and Push Docker Images (TEST)
 on:
   push:
     branches:
-      - Image-pipeline-CICD
+      - dev-oops
   workflow_dispatch:
 
 jobs:
