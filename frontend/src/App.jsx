@@ -27,8 +27,7 @@ import PersonTable from "./components/PersonTable";
 import UserEditModal from "./components/UserEditModal";
 import UserHistoryModal from "./components/UserHistoryModal";
 import {
-  DEFAULT_LOCATION_OPTIONS,
-  uniqueLocations,
+  uniqueLocations
 } from "./constants/locations.ts";
 
 import {
@@ -165,18 +164,14 @@ function App() {
   const [downloadToDate, setDownloadToDate] = useState(todayString);
 
   const isReadOnly = selectedDate !== todayString;
-  const homeLocation = DEFAULT_LOCATION_OPTIONS[0];
 
   // Logic: Memoized Data Transformations
   const locationOptions = useMemo(() => {
     const apiNames = locations.map((l) => l.name);
-    return uniqueLocations(apiNames.length > 0 ? apiNames : DEFAULT_LOCATION_OPTIONS);
+    return uniqueLocations(apiNames);
   }, [locations]);
 
-  const deletableLocationOptions = useMemo(
-    () => locationOptions.filter((l) => l !== homeLocation),
-    [locationOptions, homeLocation]
-  );
+  const deletableLocationOptions = useMemo(() => locationOptions,[locationOptions]);
 
   const locationNameById = useMemo(
     () => new Map(locations.map((l) => [Number(l.id), String(l.name || "")])),
@@ -251,6 +246,17 @@ function App() {
 
     return () => window.clearInterval(intervalId);
   }, [selectedDate, historyPerson, locationNameById, todayString]);
+
+  useEffect(() => {
+    if (deletableLocationOptions.length === 0) {
+      setLocationToDelete("");
+      return;
+    }
+
+    if (!deletableLocationOptions.includes(locationToDelete)) {
+      setLocationToDelete("");
+    }
+  }, [deletableLocationOptions, locationToDelete]);
 
   // --- API Actions ---
 
@@ -394,11 +400,16 @@ function App() {
     if (!canAddLocation) return;
     setActionLoading(true);
     try {
-      await createLocation({ name: newLocationName });
+      await createLocation(newLocationName);
       setNewLocationName("");
       await loadDashboard(selectedDate);
     } catch (err) {
-      setError("הוספת מיקום נכשלה");
+      const message = String(err?.message || "");
+      if (message.toLowerCase().includes("already exists")) {
+        setError("המיקום הזה כבר קיים במערכת.");
+      } else {
+        setError("הוספת מיקום נכשלה");
+      }
     } finally {
       setActionLoading(false);
     }

@@ -155,21 +155,24 @@ function AppToolbar({
           </div>
 
           {/* Delete location */}
-          {deletableLocationOptions.length > 0 && (
-            <div className="filter-group location-manage-group">
-              <label>מחיקה וייבוא מיקומים</label>
+          <div className="filter-group location-manage-group">
+            <label>מחיקה וייבוא מיקומים</label>
 
               <div className="location-remove-row">
                 <select
                   value={locationToDelete}
+                  placeholder="בחר מיקום למחיקה"
                   onChange={onLocationToDeleteChange}
                   disabled={!canChooseLocationToDelete}
                 >
+                  <option value="" disabled>
+                    בחר מיקום למחיקה
+                  </option>
                   {deletableLocationOptions.map((location) => (
-                    <option key={location} value={location}>
-                      {location}
-                    </option>
-                  ))}
+                      <option key={location} value={location}>
+                        {location}
+                      </option>
+                    ))}
                 </select>
 
                 <button
@@ -188,8 +191,7 @@ function AppToolbar({
                 onChange={handleImportLocationsFile}
                 disabled={actionLoading}
               />
-            </div>
-          )}
+          </div>
 
           {/* Users */}
           <div className="filter-group user-management-group">
