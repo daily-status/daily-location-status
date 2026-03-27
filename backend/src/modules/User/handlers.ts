@@ -89,11 +89,19 @@ export const AddUsersFromExcelHandler =
     }
 
     const parsedUsers = parseExcelToUsers(req.file.buffer);
-    const usersFromExcel = plainUserSchemeExcelValidator(parsedUsers)
+    
+    if (!parsedUsers || parsedUsers.length === 0) {
+      throw new ValidationError("לא נוצרו משתמשים. בדוק שהקובץ תקין ומכיל עמודות \"שם מלא\" ו\"טלפון\"");
+    }
 
+    const usersFromExcel = plainUserSchemeExcelValidator(parsedUsers);
     const result = await dal.addUsersFromExcel(usersFromExcel);
+    
+    if (result.count === 0) {
+      throw new ValidationError("המשתמשים כבר קיימים במערכת");
+    }
 
-    res.status(StatusCodes.CREATED).json(result);
+    res.status(StatusCodes.CREATED).json(`נוצרו ${result.count} משתמשים בהצלחה`);
   };
 
 export const deleteUserHandler =

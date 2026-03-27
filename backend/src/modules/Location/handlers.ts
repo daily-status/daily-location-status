@@ -83,9 +83,18 @@ export const addLocationsFromExcelHandler =
     }
 
     const parsedLocations = parseExcelToLocations(req.file.buffer);
+
+    if (!parsedLocations || parsedLocations.length === 0) {
+      throw new ValidationError("לא נוצרו מיקומים. בדוק שהקובץ תקין ומכיל עמודת \"שם\" או \"מיקום\"");
+    }
+
     const locationsFromExcel = plainLocationSchemeExcelValidator(parsedLocations);
 
     const result = await dal.addLocationsFromExcel(locationsFromExcel);
+
+    if (result.count === 0) {
+      throw new ValidationError("המיקומים כבר קיימים במערכת");
+    }
 
     res.status(StatusCodes.CREATED).json(result);
   };

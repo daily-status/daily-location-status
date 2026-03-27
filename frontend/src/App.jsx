@@ -10,6 +10,8 @@ import {
 import {
   createReport,
   deleteReport,
+  exportReports,
+  exportReportsDownloadInfo,
   fetchReports,
   updateReport,
 } from "./api/reports.ts";
@@ -375,6 +377,26 @@ function App() {
     setError("");
 
     try {
+      const user = searchTerm ? people.find(person => person.full_name === searchTerm) : undefined;
+      const locationId = locationIdByName.get(locationFilter);
+      
+
+      const filters = {
+        date: selectedDate,
+        locationId: locationId ? Number(locationId) : undefined,
+        userId: user ? Number(user.person_id) : undefined,
+      };
+
+      const response = await exportReports(filters);
+      
+      if (Object.keys(response).length === 0) {        
+        setError("אין דוחות להצגה  בתאריכים שנבחרו");
+        return;
+      }
+
+      const { url, filename } = exportReportsDownloadInfo(filters, `reports_${selectedDate}.xlsx`);   
+
+      triggerFileDownload(url, filename);
       const res = await fetch("/api/reports/backup", {
         method: "POST",
       });
@@ -392,6 +414,44 @@ function App() {
   }
 
   async function handleDownloadRangeFiles() {
+    if (!downloadFromDate || !downloadToDate) {
+      setError("יש לבחור טווח תאריכים מלא");
+      return;
+    }
+
+    if (downloadFromDate > downloadToDate) {
+      setError("תאריך התחלה חייב להיות קטן או שווה לתאריך סיום");
+      return;
+    }
+
+    setActionLoading(true);
+    setError("");
+
+    try {
+      const user = searchTerm ? people.find(person => person.full_name === searchTerm) : undefined;
+      const locationId = locationIdByName.get(locationFilter);
+      
+      const filters = {
+        minDate: downloadFromDate,
+        maxDate: downloadToDate,
+        locationId: locationId ? Number(locationId) : undefined,
+        userId: user ? Number(user.person_id) : undefined,
+      };
+
+      const response = await exportReports(filters);
+      
+      if (Object.keys(response).length === 0) {        
+        setError("אין דוחות להצגה  בתאריכים שנבחרו");
+        return;
+      }
+
+      const { url, filename } = exportReportsDownloadInfo(filters, `reports_${downloadFromDate}_to_${downloadToDate}.xlsx`);
+      triggerFileDownload(url, filename);
+    } catch (err) {
+      setError(getErrorMessage(err, "הורדת דוחות הטווח נכשלה"));
+    } finally {
+      setActionLoading(false);
+    }
     const url = `/api/reports/export?minDate=${downloadFromDate}T00:00:00.000Z&maxDate=${downloadToDate}T23:59:59.999Z`;
     triggerFileDownload(url, `report_${downloadFromDate}_to_${downloadToDate}.xlsx`);
   }
@@ -449,7 +509,14 @@ function App() {
       setNewUserPhone("");
       await loadDashboard(selectedDate);
     } catch (err) {
-      setError(getErrorMessage(err, "הוספת משתמש נכשלה"));
+      const message = getErrorMessage(err, "הוספת משתמש נכשלה");
+      if (message.includes("already exists")) {
+        setError("מספר הטלפון כבר קיים במערכת");
+      } else if (message.includes("invalid_format")) {
+        setError("מספר הטלפון אינו תקין");
+      } else {
+        setError(message);
+      }
     } finally {
       setActionLoading(false);
     }
@@ -704,7 +771,14 @@ function App() {
       await importUsersFromExcel(file);
       await loadDashboard(selectedDate);
     } catch (err) {
-      setError(getErrorMessage(err, "ייבוא משתמשים מאקסל נכשל"));
+      const message = getErrorMessage(err, "הוספת משתמש נכשלה");
+
+      if(message.includes("invalid_format")) {
+        setError(getErrorMessage("אחד או יותר ממספרי הטלפון שהוזנו לא היו תקינים", "ייבוא משתמשים מאקסל נכשל"));
+      } else {
+        setError(message);
+      }
+      
     } finally {
       setActionLoading(false);
     }

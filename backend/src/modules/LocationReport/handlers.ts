@@ -106,7 +106,13 @@ export const exportReportsHandler =
     // This is the important part: Use the DAL method the team created
     const workBook = await dal.createExcelExport(params ?? {});
 
-    const dateString = moment().format('DD-MM-YYYY');
+    const minDate = moment(params?.minDate).format('DD-MM-YYYY');
+    const maxDate = moment(params?.maxDate).format('DD-MM-YYYY');
+
+    const date = moment(params?.date).format('DD-MM-YYYY');
+    
+    const dateString = params?.date ? date : `${minDate + " - " + maxDate}`;
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename=' + `${dateString}.xlsx`);
     res.status(StatusCodes.OK);

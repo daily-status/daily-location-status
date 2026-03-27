@@ -24,3 +24,9 @@ export class AlreadyExistsError extends ClientError {
         super(`${entityName} with ${field}: '${value}' already exists`, StatusCodes.CONFLICT);
     }
 }
+
+export class NoContentError extends ClientError {
+    constructor(message: string) {
+        super(message, StatusCodes.NO_CONTENT);
+    }
+}

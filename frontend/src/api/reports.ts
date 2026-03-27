@@ -47,10 +47,13 @@ export const deleteReport = (reportId: number) =>
     method: "DELETE",
   });
 
-export const exportReports = (
+export const exportReportsDownloadInfo = (
   filters: ReportFilters = {},
   filename = "reports.xlsx"
 ): DownloadInfo => ({
   url: buildApiUrl(`/reports/export${buildQueryString(filters)}`),
   filename,
 });
+
+export const exportReports = (filters: ReportFilters = {}) =>
+  apiRequest<Blob>(`/reports/export${buildQueryString(filters)}`);

@@ -1,6 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { DBLocationReport, PartialLocationReport, PlainLocationReport } from "./types";
-import { NotFoundError } from "../../utils/errors/client";
+import { NoContentError, NotFoundError } from "../../utils/errors/client";
 import { SearchQueryOptions } from "./types";
 import moment from "moment";
 import { UserDal } from "../User/dal";
@@ -95,6 +95,8 @@ export class LocationReportDal {
 
   createExcelExport = async (params: SearchQueryOptions): Promise<Workbook> => {
     const reports = await this.getAllReports(params);
+
+    if (reports.length === 0) throw new NoContentError("אין דוחות להצגה");
 
     const workBook = new Workbook();
     const sheet = workBook.addWorksheet('דיווח');
