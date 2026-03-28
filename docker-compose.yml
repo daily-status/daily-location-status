@@ -29,10 +29,10 @@ services:
     container_name: daily-status-api
     restart: always
     environment:
-     - ENVIRONMENT="local"
+     - ENVIRONMENT=local
      - PORT=8000
      - DATABASE_URL=mysql://root:admin@db:3306/daily_status
-     - TELEGRAM_BOT_TOKEN="ENTER TOKEN"
+     - TELEGRAM_BOT_TOKEN=ENTER TOKEN
      - POLL_TIMEOUT_SECONDS=25
      - POLL_RETRY_SECONDS=5
     ports:
