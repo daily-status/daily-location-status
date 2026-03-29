@@ -15,5 +15,7 @@ please see the pdf manual in the repo.
 1. download [`docker-compose.yml`](https://raw.githubusercontent.com/daily-status/daily-location-status/refs/heads/main/docker-compose.yml)
 2. download [`start_app.sh`](https://raw.githubusercontent.com/daily-status/daily-location-status/refs/heads/main/start_app.sh)
 3. make sure they are in the same folder
-4. edit in the docker-compose.yml, the TELEGRAM_BOT_TOKEN value to your token.
-6. you may run start_app.sh, the app will be visible at http://localhost:80/
+4. edit in the docker-compose.yml, the TELEGRAM_BOT_TOKEN value to your token (MAKE SURE THE VALUE IS NOT WRAPPED BY QUOTATION MARKS).
+    - ` - TELEGRAM_BOT_TOKEN="TOKEN_VALUE"` ❌
+    - ` - TELEGRAM_BOT_TOKEN=TOKEN_VALUE` ✅
+5. you may run start_app.sh, the app will be visible at http://localhost:80/
