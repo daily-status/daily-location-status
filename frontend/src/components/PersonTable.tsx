@@ -22,6 +22,7 @@ const PersonTable = (props: PersonTableProps) => {
             <th>סטטוס יומי</th>
             <th>טלפון</th>
             <th>עודכן אחרונה</th>
+            <th>הערות</th>
             <th>פעולות</th>
           </tr>
         </thead>

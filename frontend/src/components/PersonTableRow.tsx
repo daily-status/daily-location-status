@@ -13,6 +13,7 @@ export type PersonRow = {
   daily_status: string;
   phone?: string;
   last_updated?: string;
+  notes?: string;
 };
 
 type PersonTableRowProps = {
@@ -43,6 +44,7 @@ const PersonTableRow = ({
       </td>
       <td>{person.phone || "-"}</td>
       <td>{formatTimestamp(person.last_updated)}</td>
+      <td>{person?.notes ?? 'אין הערות'}</td>
       <td>
         <button
           type="button"
