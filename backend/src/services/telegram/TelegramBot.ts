@@ -19,6 +19,7 @@ export type MyBotContext = Context & { session: MyBotSession };
 
 export class TelegramBot {
   private bot: Telegraf<MyBotContext>;
+  private username?: string;
 
   constructor(
     private userDal: UserDal,
@@ -35,6 +36,8 @@ export class TelegramBot {
     reportHandler(this.bot, this.userDal, this.locationDal, this.locationReportDal);
   }
   public async launch() {
+    const { username } = await this.bot.telegram.getMe();
+    this.username = username
     await this.bot.launch();
   };
 
@@ -46,4 +49,6 @@ export class TelegramBot {
     await this.stop();
     await this.launch();
   };
+
+  public getBotName = () => this.username;
 }

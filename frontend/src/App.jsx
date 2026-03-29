@@ -128,6 +128,7 @@ function App() {
   const todayString = getTodayString();
 
   // State Management
+  const [botInfo, setBotInfo] = useState<botInfo | undefined>(undefined);
   const [users, setUsers] = useState([]);
   const [reports, setReports] = useState([]);
   const [locations, setLocations] = useState([]);
@@ -811,6 +812,7 @@ function App() {
         <div>
           <h1>ניהול סטטוס יומי ומיקום</h1>
           <p className="muted-text">תצוגת משתמשים ודוחות לפי התאריך שנבחר</p>
+          <p className="muted-text">שם משתמש של הבוט ${'@'+botInfo.name}</p>
         </div>
 
         <div className="header-actions">

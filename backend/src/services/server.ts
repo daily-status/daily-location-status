@@ -60,6 +60,10 @@ export class Server {
       res.sendStatus(StatusCodes.OK);
     });
 
+    this.app.get('/bot-info', (_req: Request, res: Response) => {
+      res.status(StatusCodes.OK).json({ name: this.telegramBot?.getBotName() })
+    });
+
     this.app.use(
       (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
         if (err instanceof HttpError) {
@@ -74,7 +78,7 @@ export class Server {
     const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
 
     if (!telegramBotToken) {
-      logger.info("TelegramBot disabled (missing TELEGRAM_BOT_TOKEN)");
+      logger.warn("TelegramBot disabled (missing TELEGRAM_BOT_TOKEN)");
       return;
     }
 
