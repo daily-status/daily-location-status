@@ -126,6 +126,10 @@
   align-items: center;
 }
 
+.history-full-width {
+  grid-column: 1 / -1;
+}
+
 .history-status-buttons {
   display: flex;
   gap: 6px;

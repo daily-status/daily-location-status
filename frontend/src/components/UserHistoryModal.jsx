@@ -80,6 +80,15 @@ function UserHistoryModal({
             </div>
 
             <input
+              type="text"
+              className="history-full-width"
+              value={draftReport.notes || ""}
+              onChange={(event) => onDraftChange("notes", event.target.value)}
+              placeholder="הערות"
+              disabled={readOnly || saving}
+            />
+
+            <input
               type="datetime-local"
               min={minDate}
               value={draftReport.occurredAt}

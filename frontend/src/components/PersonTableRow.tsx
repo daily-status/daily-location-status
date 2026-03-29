@@ -11,6 +11,7 @@ export type PersonRow = {
   full_name: string;
   location: string;
   daily_status: string;
+  notes?: string;
   phone?: string;
   last_updated?: string;
 };
@@ -41,6 +42,7 @@ const PersonTableRow = ({
           {person.daily_status}
         </span>
       </td>
+      <td>{person.notes || "-"}</td>
       <td>{person.phone || "-"}</td>
       <td>{formatTimestamp(person.last_updated)}</td>
       <td>

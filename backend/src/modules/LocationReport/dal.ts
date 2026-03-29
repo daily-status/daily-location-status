@@ -6,38 +6,23 @@ import moment from "moment";
 import { UserDal } from "../User/dal";
 import { LocationDal } from "../Location/dal";
 import { Workbook } from "exceljs";
+import { createExcelExportWorkbook } from "./excel";
 
-// Temporary compatibility layer until the DB includes LocationReport.notes.
-const locationReportLegacySelect = {
+const locationReportSelect = {
   id: true,
   userId: true,
   locationId: true,
   occurredAt: true,
   createdAt: true,
   isStatusOk: true,
+  notes: true,
   source: true,
 } satisfies Prisma.LocationReportSelect;
-
-type LocationReportLegacyRecord = Prisma.LocationReportGetPayload<{
-  select: typeof locationReportLegacySelect;
-}>;
-
-const withoutLegacyNotes = <T extends { notes?: string | null }>(data: T) => {
-  const { notes: _notes, ...compatibleData } = data;
-  return compatibleData;
-};
-
-const withNotesPlaceholder = (
-  report: LocationReportLegacyRecord
-): DBLocationReport => ({
-  ...report,
-  notes: null,
-});
 
 export class LocationReportDal {
   private model;
   constructor(
-    prisma: PrismaClient,
+    private prisma: PrismaClient,
     private userDal: UserDal,
     private locationDal: LocationDal
   ) {
@@ -47,13 +32,13 @@ export class LocationReportDal {
   private findManyCompatible = (where: Prisma.LocationReportWhereInput) =>
     this.model.findMany({
       where,
-      select: locationReportLegacySelect,
+      select: locationReportSelect,
     });
 
   private findUniqueCompatible = (id: number) =>
     this.model.findUnique({
       where: { id },
-      select: locationReportLegacySelect,
+      select: locationReportSelect,
     });
 
   getAllReports = async (
@@ -90,66 +75,12 @@ export class LocationReportDal {
     }
 
     const reports = await this.findManyCompatible(where);
-    return reports.map(withNotesPlaceholder);
+    return reports;
   };
 
   createExcelExport = async (params: SearchQueryOptions): Promise<Workbook> => {
-    const reports = await this.getAllReports(params);
-
-    if (reports.length === 0) throw new NoContentError("אין דוחות להצגה");
-
-    const workBook = new Workbook();
-    const sheet = workBook.addWorksheet('דיווח');
-
-    const rows = await Promise.all(reports.map(async row => {
-      const user = await this.userDal.getUserById(row.userId);
-      const location = await this.locationDal.getLocationById(row.locationId);
-      return [
-        user.fullName,
-        location.name,
-        row.occurredAt.toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' }),
-        row.occurredAt.toLocaleTimeString('he-IL', { timeZone: 'Asia/Jerusalem' }),
-        row.isStatusOk === true ? "תקין" : row.isStatusOk === false ? "לא תקין" : "לא הוזן",
-        row.notes,
-        row.source,
-      ];
-    }));
-
-    sheet.addTable({
-      name: 'ReportsTable',
-      ref: 'A1',
-      headerRow: true,
-      style: {
-        theme: 'TableStyleMedium2',
-        showRowStripes: true,
-        showColumnStripes: false,
-        showFirstColumn: true,
-        showLastColumn: true,
-      },
-      columns: [
-        { name: 'שם משתמש', filterButton: true },
-        { name: 'מיקום', filterButton: true },
-        { name: 'תאריך', filterButton: true },
-        { name: 'שעה', filterButton: true },
-        { name: 'סטטוס', filterButton: true },
-        { name: 'הערות', filterButton: true },
-        { name: 'מקור', filterButton: true },
-      ],
-      rows,
-    });
-
-    sheet.columns.forEach(column => {
-      let maxLength = 0;
-      column.values?.forEach(value => {
-        if (value && value!.toString().length > maxLength) {
-          maxLength = value!.toString().length;
-        }
-      });
-      column.width = maxLength + 5;
-    });
-
-    return workBook;
-  }
+    return createExcelExportWorkbook(this.prisma, params);
+  };
 
   getReportById = async (id: number): Promise<DBLocationReport> => {
     const report = await this.findUniqueCompatible(id);
@@ -158,7 +89,7 @@ export class LocationReportDal {
       throw new NotFoundError("LocationReport", id.toString());
     }
 
-    return withNotesPlaceholder(report);
+    return report;
   };
 
   addReport = async (data: PlainLocationReport): Promise<DBLocationReport> => {
@@ -171,11 +102,11 @@ export class LocationReportDal {
     }
 
     const report = await this.model.create({
-      data: withoutLegacyNotes(data),
-      select: locationReportLegacySelect,
+      data,
+      select: locationReportSelect,
     });
 
-    return withNotesPlaceholder(report);
+    return report;
   };
 
   updateReport = async (
@@ -191,18 +122,18 @@ export class LocationReportDal {
 
     const report = await this.model.update({
       where: { id },
-      data: withoutLegacyNotes(data),
-      select: locationReportLegacySelect,
+      data,
+      select: locationReportSelect,
     });
 
-    return withNotesPlaceholder(report);
+    return report;
   };
 
   deleteReport = async (id: number): Promise<void> => {
     await this.getReportById(id);
     await this.model.delete({
       where: { id },
-      select: locationReportLegacySelect,
+      select: locationReportSelect,
     });
   };
 
