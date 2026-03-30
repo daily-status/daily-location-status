@@ -838,14 +838,6 @@ function App() {
             />
             <button
               className="btn btn-primary"
-              data-testid="load-date-button"
-              onClick={() => handleLoadSelectedDate(selectedDate)}
-              disabled={!canDownloadSelectedDate}
-            >
-              טען תאריך
-            </button>
-            <button
-              className="btn btn-primary"
               onClick={handleDownloadDayFile}
               disabled={!canDownloadSelectedDate || filteredPeople.length === 0}
             >
