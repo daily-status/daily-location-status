@@ -3,7 +3,7 @@ import z from 'zod';
 export const PlainUserScheme = z.object({
     fullName: z.string(),
     phone: z.string()
-    .regex(/^(\+9725\d{8}|05\d{8})$/)
+    .regex(/^(\+9725\d{8}|05\d{8})$/, 'טלפון לא תקין')
     .transform(val => val.startsWith('+972') ? ('0' + val.slice(4)) : val),
 });
 
