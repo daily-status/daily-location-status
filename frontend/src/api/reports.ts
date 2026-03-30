@@ -5,6 +5,7 @@ export type Report = {
   userId: number;
   locationId: number;
   isStatusOk?: boolean | null;
+  notes?: string | null;
   occurredAt: string;
   createdAt?: string;
   source?: "ui" | "bot";
