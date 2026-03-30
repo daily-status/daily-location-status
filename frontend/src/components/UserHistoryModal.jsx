@@ -80,11 +80,21 @@ function UserHistoryModal({
             </div>
 
             <input
+              type="text"
+              className="history-full-width"
+              value={draftReport.notes || ""}
+              onChange={(event) => onDraftChange("notes", event.target.value)}
+              placeholder="הערות"
+              disabled={readOnly || saving}
+            />
+
+            <input
               type="datetime-local"
               min={minDate}
               value={draftReport.occurredAt}
               onChange={(event) => onDraftChange("occurredAt", event.target.value)}
               disabled={readOnly || saving}
+              dir="ltr"
             />
 
             <button
@@ -160,6 +170,7 @@ function UserHistoryModal({
                       onDraftChange(`report:${report.id}:occurredAt`, event.target.value)
                     }
                     disabled={readOnly || !report.isEditable || saving}
+                    dir="ltr"
                   />
 
                   <button
@@ -174,7 +185,7 @@ function UserHistoryModal({
                     type="button"
                     className="btn btn-danger"
                     onClick={() => onDeleteReport(report.id)}
-                    disabled={readOnly || !report.isEditable || deletingReportId === report.id}
+                    // disabled={readOnly || !report.isEditable || deletingReportId === report.id}
                   >
                     מחק
                   </button>

@@ -20,6 +20,7 @@ const PersonTable = (props: PersonTableProps) => {
             <th>שם מלא</th>
             <th>מיקום נוכחי</th>
             <th>סטטוס יומי</th>
+            <th>הערות</th>
             <th>טלפון</th>
             <th>עודכן אחרונה</th>
             <th>הערות</th>
@@ -29,7 +30,7 @@ const PersonTable = (props: PersonTableProps) => {
         <tbody>
           {people.length === 0 ? (
             <tr>
-              <td colSpan={6} className="empty-row">
+              <td colSpan={7} className="empty-row">
                 לא נמצאו נתונים להצגה
               </td>
             </tr>

@@ -44,6 +44,7 @@ import { getErrorMessage } from "./utils/errors.ts";
 
 const REPORTS_UNAVAILABLE_MESSAGE = "לא קיימים דוחות לתאריך שנבחר.";
 export const MIN_DATE = "2026-03-20";
+const MISSING_LOCATION_LABEL = "לא הוזן";
 
 const normalizeLocationName = (value) => String(value || "").trim();
 
@@ -160,6 +161,7 @@ function App() {
   const [draftReport, setDraftReport] = useState({
     locationName: "",
     status: DAILY_STATUS_OK,
+    notes: "",
     occurredAt: "",
   });
   const [downloadFromDate, setDownloadFromDate] = useState(todayString);
@@ -201,9 +203,12 @@ function App() {
       return {
         person_id: String(user.id),
         full_name: String(user.fullName || ""),
-        location: locationNameById.get(Number(latest?.locationId)) || (latest ? String(latest.locationId) : ""),
+        location:
+          locationNameById.get(Number(latest?.locationId)) ||
+          (latest ? String(latest.locationId) : MISSING_LOCATION_LABEL),
         daily_status: latest?.isStatusOk === true ? DAILY_STATUS_OK :
                       latest?.isStatusOk === false ? DAILY_STATUS_BAD : DAILY_STATUS_MISSING,
+        notes: String(latest?.notes || "").trim(),
         phone: user.phone ? String(user.phone) : "",
         last_updated: latest?.occurredAt || "",
       };
@@ -600,6 +605,7 @@ function App() {
     setDraftReport({
       locationName: defaultLocationName,
       status: DAILY_STATUS_OK,
+      notes: "",
       occurredAt: "",
     });
   }
@@ -633,7 +639,7 @@ function App() {
   }
 
   function handleDraftReportChange(key, value) {
-    if (key === "locationName" || key === "status" || key === "occurredAt") {
+    if (key === "locationName" || key === "status" || key === "notes" || key === "occurredAt") {
       setDraftReport((current) => ({
         ...current,
         [key]: value,
@@ -693,6 +699,7 @@ function App() {
         userId,
         locationId,
         isStatusOk: mapDailyStatusToReportStatus(draftReport.status),
+        notes: String(draftReport.notes || "").trim() || null,
         occurredAt,
         source: "ui",
       });
