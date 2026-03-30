@@ -239,7 +239,7 @@ export const createTransitionsSheet = async (
   );
 
   const rows = reports
-    .filter((report) => !latestDailyReportIds.has(report.id))
+    // .filter((report) => !latestDailyReportIds.has(report.id)) 
     .map((report) => [
       report.user.fullName,
       report.location.name,
@@ -281,9 +281,10 @@ export const createTransitionsSheet = async (
 export const createExcelArchive = async (db: PrismaClient, date: Date) => {
   const workbook = new Workbook();
   const snapshotSheet = workbook.addWorksheet("מצב יומי");
+  const transitionsSheet = workbook.addWorksheet('דיווחים');
 
-  const nextRow = await createDateSnapshotSheet(snapshotSheet, db, date);
-  await createTransitionsSheet(snapshotSheet, db, date, nextRow + 2);
+  await createDateSnapshotSheet(snapshotSheet, db, date);
+  await createTransitionsSheet(transitionsSheet, db, date);
 
   return workbook;
 };
