@@ -5,8 +5,7 @@ import {
   DAILY_STATUS_OK,
 } from "../constants/statuses.ts";
 
-function AppToolbar({
-  emptyTable,
+const AppToolbar = ({
   actionLoading,
   canAddLocation,
   canAddUser,
@@ -40,7 +39,7 @@ function AppToolbar({
   searchTerm,
   statusFilter,
   todayString,
-}) {
+}) => {
   return (
     <>
       {/* FILTERS */}

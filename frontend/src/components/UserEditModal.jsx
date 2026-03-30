@@ -1,4 +1,4 @@
-function UserEditModal({
+const UserEditModal = ({
   open,
   loading,
   user,
@@ -9,7 +9,7 @@ function UserEditModal({
   onFullNameChange,
   onPhoneChange,
   onSubmit,
-}) {
+}) => {
   if (!open || !user) {
     return null;
   }

@@ -124,7 +124,7 @@ const formatBackupLastUpdated = (value) => {
   }).format(parsed);
 };
 
-function App() {
+const App = () => {
   const todayString = getTodayString();
 
   // State Management
@@ -263,7 +263,7 @@ function App() {
 
   // --- API Actions ---
 
-  async function loadDashboard(dateValue, options = {}) {
+  const loadDashboard = async (dateValue, options = {}) => {
     const { silent = false } = options;
 
     if (!silent) {
@@ -297,7 +297,7 @@ function App() {
     }
   }
 
-  async function loadBackupFiles() {
+  const loadBackupFiles = async () => {
     try {
       const res = await fetch("/api/reports/backup/list");
       if (res.ok) {
@@ -316,7 +316,7 @@ function App() {
     }
   }
 
-  async function refreshData(dateValue = selectedDate, options = {}) {
+  const refreshData = async (dateValue = selectedDate, options = {}) => {
     const { silent = false } = options;
 
     if (!silent) {
@@ -337,26 +337,26 @@ function App() {
   }
 
   // FIX: Added missing handleLoadSelectedDate
-  async function handleLoadSelectedDate(dateValue) {
+  const handleLoadSelectedDate = async (dateValue) => {
     if (!dateValue) return;
     await refreshData(dateValue);
   }
 
   // FIX: Added missing handleDownloadDayFile
-  function handleDownloadDayFile() {
+  const handleDownloadDayFile = () => {
     if (!selectedDate) return;
     const url = `/api/reports/export?minDate=${selectedDate}T00:00:00.000Z&maxDate=${selectedDate}T23:59:59.999Z`;
     triggerFileDownload(url, `report_${selectedDate}.xlsx`);
   }
 
   // FIX: Added missing handleEditPerson
-  function handleEditPerson(person) {
+const handleEditPerson = (person) => {
     setEditingPerson(person);
     setEditUserFullName(person?.full_name || "");
     setEditUserPhone(person?.phone || "");
   }
 
-  function triggerFileDownload(url, filename) {
+const triggerFileDownload = (url, filename) => {
     const link = document.createElement("a");
     link.href = url;
     if (filename) {
@@ -368,12 +368,12 @@ function App() {
     link.remove();
   }
 
-  async function handleBackupDownload(fileName) {
+  const handleBackupDownload = async (fileName) => {
     const url = `/api/reports/backup/download/${encodeURIComponent(fileName)}?t=${Date.now()}`;
     triggerFileDownload(url, fileName);
   }
 
-  async function handleRenderBackupNow() {
+  const handleRenderBackupNow = async () => {
     setBackupRendering(true);
     setError("");
 
@@ -414,7 +414,7 @@ function App() {
     }
   }
 
-  async function handleDownloadRangeFiles() {
+  const handleDownloadRangeFiles = async () => {
     if (!downloadFromDate || !downloadToDate) {
       setError("יש לבחור טווח תאריכים מלא");
       return;
@@ -457,7 +457,7 @@ function App() {
     triggerFileDownload(url, `report_${downloadFromDate}_to_${downloadToDate}.xlsx`);
   }
 
-  async function handleAddLocation() {
+  const handleAddLocation = async () => {
     if (!canAddLocation) return;
     setActionLoading(true);
     try {
@@ -476,7 +476,7 @@ function App() {
     }
   }
 
-  async function handleDeleteLocation() {
+  const handleDeleteLocation = async () => {
     if (!canDeleteLocation) return;
     const target = locations.find(l => l.name === locationToDelete);
     if (!target) return;
@@ -492,7 +492,7 @@ function App() {
     }
   }
 
-  async function handleAddUser() {
+  const handleAddUser = async () => {
     const fullName = String(newUserFullName || "").trim();
     const phone = String(newUserPhone || "").trim();
 
@@ -523,7 +523,7 @@ function App() {
     }
   }
 
-  async function handleUpdateUser() {
+  const handleUpdateUser = async () => {
     const userId = Number(editingPerson?.person_id);
     const fullName = String(editUserFullName || "").trim();
     const phone = String(editUserPhone || "").trim();
@@ -551,7 +551,7 @@ function App() {
     }
   }
 
-  async function handleDeleteUser() {
+  const handleDeleteUser = async () => {
     const userId = Number(editingPerson?.person_id);
     const fullName = String(editingPerson?.full_name || "");
 
@@ -578,7 +578,7 @@ function App() {
     }
   }
 
-  function normalizeHistoryReports(rawReports) {
+  const normalizeHistoryReports = (rawReports) => {
     return rawReports
       .slice()
       .sort(
@@ -597,7 +597,7 @@ function App() {
       }));
   }
 
-  function resetDraftReport(defaultLocationName = "") {
+const resetDraftReport = (defaultLocationName = "") => {
     setDraftReport({
       locationName: defaultLocationName,
       status: DAILY_STATUS_OK,
@@ -605,7 +605,7 @@ function App() {
     });
   }
 
-  async function loadHistoryReports(person) {
+  const loadHistoryReports = async (person) => {
     const userId = Number(person?.person_id);
     if (!userId) {
       return;
@@ -616,7 +616,7 @@ function App() {
     setHistoryReports(normalizeHistoryReports(safeReports));
   }
 
-  async function handleOpenHistory(person) {
+  const handleOpenHistory = async (person) => {
     setHistoryPerson(person);
     setHistoryReports([]);
     setHistoryLoading(true);
@@ -633,7 +633,7 @@ function App() {
     }
   }
 
-  function handleDraftReportChange(key, value) {
+const handleDraftReportChange = (key, value) => {
     if (key === "locationName" || key === "status" || key === "occurredAt") {
       setDraftReport((current) => ({
         ...current,
@@ -676,7 +676,7 @@ function App() {
     );
   }
 
-  async function handleAddHistoryReport() {
+  const handleAddHistoryReport = async () => {
     const userId = Number(historyPerson?.person_id);
     const locationId = locationIdByName.get(String(draftReport.locationName || "").trim());
     const occurredAt = toUtcIsoFromLocalInput(draftReport.occurredAt);
@@ -707,7 +707,7 @@ function App() {
     }
   }
 
-  async function handleUpdateHistoryReport(reportId) {
+  const handleUpdateHistoryReport = async (reportId) => {
     const report = historyReports.find((item) => Number(item.id) === Number(reportId));
     const locationId = locationIdByName.get(String(report?.locationName || "").trim());
     const occurredAt = toUtcIsoFromLocalInput(report?.occurredAt || "");
@@ -737,7 +737,7 @@ function App() {
     }
   }
 
-  async function handleDeleteHistoryReport(reportId) {
+  const handleDeleteHistoryReport = async (reportId) => {
     const approved = window.confirm("למחוק את הדיווח שנבחר?");
     if (!approved) {
       return;
@@ -757,7 +757,7 @@ function App() {
     }
   }
 
-  async function handleImportUsersFile(event) {
+  const handleImportUsersFile = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = "";
 
@@ -785,7 +785,7 @@ function App() {
     }
   }
 
-  async function handleImportLocationsFile(event) {
+  const handleImportLocationsFile = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = "";
 
@@ -812,7 +812,7 @@ function App() {
         <div>
           <h1>ניהול סטטוס יומי ומיקום</h1>
           <p className="muted-text">תצוגת משתמשים ודוחות לפי התאריך שנבחר</p>
-          <p className="muted-text">שם משתמש של הבוט ${'@'+botInfo.name}</p>
+          {botInfo && <p className="muted-text">שם משתמש של הבוט ${'@'+botInfo.name}</p>}
         </div>
 
         <div className="header-actions">

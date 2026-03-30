@@ -17,7 +17,7 @@ const getHistoryStatusLabel = (value) => {
   return DAILY_STATUS_MISSING;
 };
 
-function UserHistoryModal({
+const UserHistoryModal = ({
   open,
   loading,
   readOnly,
@@ -33,7 +33,7 @@ function UserHistoryModal({
   onAddReport,
   onDeleteReport,
   onUpdateReport,
-}) {
+}) => {
   if (!open || !user) {
     return null;
   }
