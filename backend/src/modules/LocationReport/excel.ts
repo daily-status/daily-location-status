@@ -239,7 +239,7 @@ export const createTransitionsSheet = async (
   );
 
   const rows = reports
-    .filter((report) => !latestDailyReportIds.has(report.id))
+    // .filter((report) => !latestDailyReportIds.has(report.id)) 
     .map((report) => [
       report.user.fullName,
       report.location.name,
